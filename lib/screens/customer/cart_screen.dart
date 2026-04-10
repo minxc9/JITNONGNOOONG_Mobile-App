@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/restaurant.dart';
@@ -140,8 +141,42 @@ class _CartScreenState extends State<CartScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: Text('${item.name} x$quantity')),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: SizedBox(
+                              width: 64,
+                              height: 64,
+                              child: _imageBox(
+                                imageUrl: item.imageUrl,
+                                fallbackIcon: Icons.fastfood,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Qty: $quantity',
+                                  style: TextStyle(color: Colors.grey[700]),
+                                ),
+                                Text(
+                                  '฿${item.price.toStringAsFixed(2)} each',
+                                  style: TextStyle(color: Colors.grey[700]),
+                                ),
+                              ],
+                            ),
+                          ),
                           Text(
                             '฿${(item.price * quantity).toStringAsFixed(2)}',
                             style: const TextStyle(fontWeight: FontWeight.w600),
@@ -291,6 +326,37 @@ class _CartScreenState extends State<CartScreen> {
         const Spacer(),
         Text('฿${value.toStringAsFixed(2)}', style: style),
       ],
+    );
+  }
+
+  Widget _imageBox({
+    required String? imageUrl,
+    required IconData fallbackIcon,
+  }) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return Container(
+        color: Colors.orange.withValues(alpha: 0.10),
+        child: Center(
+          child: Icon(fallbackIcon, size: 28, color: Colors.orange),
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      placeholder: (_, __) => Container(
+        color: Colors.orange.withValues(alpha: 0.08),
+        child: const Center(
+          child: CircularProgressIndicator(color: Colors.orange),
+        ),
+      ),
+      errorWidget: (_, __, ___) => Container(
+        color: Colors.orange.withValues(alpha: 0.10),
+        child: Center(
+          child: Icon(fallbackIcon, size: 28, color: Colors.orange),
+        ),
+      ),
     );
   }
 }
