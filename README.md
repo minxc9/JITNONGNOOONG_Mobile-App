@@ -40,7 +40,6 @@ flutter doctor
 ## Project Location
 
 Current local path:
-example
 
 ```bash
 /Users/mn/Downloads/JITNONGNOOONG-Mobile-App-main-3
@@ -183,6 +182,27 @@ Run tests:
 ```bash
 flutter test
 ```
+
+Run tests with coverage:
+
+```bash
+flutter test --coverage
+```
+
+Check the coverage percentage from the generated `lcov` file:
+
+```bash
+awk 'BEGIN{FS=":"} /^LF:/{lf+=$2} /^LH:/{lh+=$2} END{if(lf>0) printf("Coverage: %.2f%% (%d/%d)\n", (lh/lf)*100, lh, lf); else print "No coverage data"}' coverage/lcov.info
+```
+
+
+Main test files:
+
+- `test/api_service_test.dart`
+- `test/models_test.dart`
+- `test/local_storage_service_test.dart`
+- `test/session_manager_test.dart`
+- `test/widget_test.dart`
 
 ## Troubleshooting
 

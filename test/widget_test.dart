@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('basic smoke test', (WidgetTester tester) async {
+  testWidgets('smoke test widget renders expected text', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: Text('Smoke Test'),
+          body: Center(child: Text('Smoke Test')),
         ),
       ),
     );
