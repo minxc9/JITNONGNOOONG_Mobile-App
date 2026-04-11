@@ -247,6 +247,63 @@ void main() {
     expect(find.text('Order Tracking'), findsOneWidget);
   });
 
+  testWidgets('OrderTrackingScreen shows live tracking for picked up orders', (
+    tester,
+  ) async {
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        if (request.url.path.endsWith('/orders/2')) {
+          return http.Response(
+            jsonEncode(_orderPayload(status: 'PICKED_UP')),
+            200,
+          );
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(home: OrderTrackingScreen(orderId: 2)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Live Tracking Map'), findsOneWidget);
+    expect(
+      find.text('Updates every 5 seconds with simulated GPS coordinates'),
+      findsOneWidget,
+    );
+    expect(find.text('Delivered'), findsNothing);
+  });
+
+  testWidgets('OrderTrackingScreen shows cancel action for pending orders', (
+    tester,
+  ) async {
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        if (request.url.path.endsWith('/orders/3') && request.method == 'GET') {
+          return http.Response(
+            jsonEncode(_orderPayload(status: 'PENDING')),
+            200,
+          );
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(home: OrderTrackingScreen(orderId: 3)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Cancel Order'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel Order'), findsOneWidget);
+  });
+
   testWidgets('DeliveryScreen renders pickup and drop-off details', (
     tester,
   ) async {
@@ -461,7 +518,8 @@ void main() {
       }),
     );
 
-    await tester.pumpWidget(const MaterialApp(home: RestaurantDashboardScreen()));
+    await tester
+        .pumpWidget(const MaterialApp(home: RestaurantDashboardScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('Bangkok Street Food'), findsOneWidget);

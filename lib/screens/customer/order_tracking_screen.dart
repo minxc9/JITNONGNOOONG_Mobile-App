@@ -613,6 +613,68 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     );
   }
 
+  Widget _buildActionSection(Order order) {
+    final canCancel = order.status == 'PENDING' || order.status == 'CONFIRMED';
+    final canRate =
+        order.status == 'DELIVERED' && order.restaurantReviewId == null;
+
+    return Column(
+      children: [
+        if (canCancel)
+          Padding(
+            padding: const EdgeInsets.only(top: 18, bottom: 14),
+            child: OutlinedButton.icon(
+              onPressed: _cancelOrder,
+              icon: const Icon(Icons.cancel_outlined),
+              label: const Text('Cancel Order'),
+            ),
+          ),
+        if (canRate)
+          Padding(
+            padding: const EdgeInsets.only(top: 18, bottom: 14),
+            child: ElevatedButton.icon(
+              onPressed: _showRestaurantReviewDialog,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+              ),
+              icon: const Icon(
+                Icons.storefront,
+                color: Colors.white,
+              ),
+              label: const Text(
+                'Rate Restaurant',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        if (order.restaurantReviewId != null) _buildSavedReviewCard(order),
+      ],
+    );
+  }
+
+  Widget _buildLoadedBody(Order order, _TrackingSnapshot? tracking) {
+    return RefreshIndicator(
+      onRefresh: _loadOrder,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        children: [
+          _buildProgressCard(order),
+          const SizedBox(height: 16),
+          _buildDeliveryStatusCard(order),
+          const SizedBox(height: 16),
+          if (tracking != null) ...[
+            _buildTrackingSection(order, tracking),
+            const SizedBox(height: 20),
+          ],
+          _buildDeliveryDetailsCard(order),
+          const SizedBox(height: 16),
+          _buildOrderItemsCard(order),
+          _buildActionSection(order),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = _order;
@@ -627,57 +689,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           ? const AppLoadingView()
           : order == null
               ? const Center(child: Text('Order not found'))
-              : RefreshIndicator(
-                  onRefresh: _loadOrder,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                    children: [
-                      _buildProgressCard(order),
-                      const SizedBox(height: 16),
-                      _buildDeliveryStatusCard(order),
-                      const SizedBox(height: 16),
-                      if (tracking != null) ...[
-                        _buildTrackingSection(order, tracking),
-                        const SizedBox(height: 20),
-                      ],
-                      _buildDeliveryDetailsCard(order),
-                      const SizedBox(height: 16),
-                      _buildOrderItemsCard(order),
-                      if (order.status == 'PENDING' ||
-                          order.status == 'CONFIRMED')
-                        Padding(
-                          padding: const EdgeInsets.only(top: 18, bottom: 14),
-                          child: OutlinedButton.icon(
-                            onPressed: _cancelOrder,
-                            icon: const Icon(Icons.cancel_outlined),
-                            label: const Text('Cancel Order'),
-                          ),
-                        ),
-                      if (order.status == 'DELIVERED' &&
-                          order.restaurantReviewId == null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 18, bottom: 14),
-                          child: ElevatedButton.icon(
-                            onPressed: _showRestaurantReviewDialog,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                            ),
-                            icon: const Icon(
-                              Icons.storefront,
-                              color: Colors.white,
-                            ),
-                            label: const Text(
-                              'Rate Restaurant',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      if (order.status == 'DELIVERED') const SizedBox.shrink(),
-                      if (order.restaurantReviewId != null)
-                        _buildSavedReviewCard(order),
-                    ],
-                  ),
-                ),
+              : _buildLoadedBody(order, tracking),
     );
   }
 
