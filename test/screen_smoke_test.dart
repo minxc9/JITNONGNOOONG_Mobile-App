@@ -168,9 +168,19 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     expect(find.text('Checkout'), findsOneWidget);
     expect(find.text('Your Order'), findsOneWidget);
+    expect(find.text('Pad Thai'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Place Order'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     expect(find.text('Place Order'), findsOneWidget);
   });
 
