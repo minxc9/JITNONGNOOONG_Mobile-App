@@ -6,6 +6,7 @@ import '../../models/user.dart';
 import '../../services/api_service.dart';
 import '../../services/local_storage_service.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/shared_ui.dart';
 import '../auth/login_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -191,7 +192,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Future<void> _togglePromotion(Promotion promotion) async {
     final updated = _promotions
         .map((item) => item.id == promotion.id
-            ? item.copyWith(active: !item.active)
+            ? item.copyWith(PromotionChanges(active: !item.active))
             : item)
         .toList();
     await LocalStorageService.saveAdminPromotions(updated);
@@ -234,32 +235,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           actions: [
             IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(80),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
-              child: Container(
-                height: 54,
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const TabBar(
-                  tabs: [
-                    Tab(text: 'Overview'),
-                    Tab(text: 'Accounts'),
-                    Tab(text: 'Promotions'),
-                  ],
-                ),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(80),
+            child: DashboardTabBarContainer(
+              child: TabBar(
+                tabs: [
+                  Tab(text: 'Overview'),
+                  Tab(text: 'Accounts'),
+                  Tab(text: 'Promotions'),
+                ],
               ),
             ),
           ),
         ),
         body: _loading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.orange),
-              )
+            ? const AppLoadingView()
             : TabBarView(
                 children: [
                   _buildOverviewTab(),
@@ -451,20 +441,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _metricCard(String title, String value, IconData icon) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.orange.withValues(alpha: 0.15),
-          child: Icon(icon, color: Colors.orange),
-        ),
-        title: Text(title),
-        subtitle: Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-      ),
-    );
+    return AppMetricCard(title: title, value: value, icon: icon);
   }
 
   Widget _textField(

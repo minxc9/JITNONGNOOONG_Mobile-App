@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/restaurant.dart';
 import '../../services/api_service.dart';
+import '../../widgets/shared_ui.dart';
 import 'cart_screen.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
@@ -54,7 +54,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         backgroundColor: Colors.orange,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.orange))
+          ? const AppLoadingView()
           : CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(child: _buildHeroImage()),
@@ -82,9 +82,10 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     return SizedBox(
       width: double.infinity,
       height: 220,
-      child: _imageBox(
+      child: AppRemoteImageBox(
         imageUrl: widget.restaurant.imageUrl,
         fallbackIcon: Icons.restaurant_menu,
+        fallbackIconSize: 42,
       ),
     );
   }
@@ -164,9 +165,10 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               child: SizedBox(
                 width: 92,
                 height: 92,
-                child: _imageBox(
+                child: AppRemoteImageBox(
                   imageUrl: item.imageUrl,
                   fallbackIcon: Icons.fastfood,
+                  fallbackIconSize: 42,
                 ),
               ),
             ),
@@ -230,36 +232,5 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       '฿${item.price.toStringAsFixed(0)}',
     ];
     return details.join(' • ');
-  }
-
-  Widget _imageBox({
-    required String? imageUrl,
-    required IconData fallbackIcon,
-  }) {
-    if (imageUrl == null || imageUrl.isEmpty) {
-      return Container(
-        color: Colors.orange.withValues(alpha: 0.10),
-        child: Center(
-          child: Icon(fallbackIcon, size: 42, color: Colors.orange),
-        ),
-      );
-    }
-
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      placeholder: (_, __) => Container(
-        color: Colors.orange.withValues(alpha: 0.08),
-        child: const Center(
-          child: CircularProgressIndicator(color: Colors.orange),
-        ),
-      ),
-      errorWidget: (_, __, ___) => Container(
-        color: Colors.orange.withValues(alpha: 0.10),
-        child: Center(
-          child: Icon(fallbackIcon, size: 42, color: Colors.orange),
-        ),
-      ),
-    );
   }
 }

@@ -139,7 +139,8 @@ void main() {
       expect(category.toJson()['name'], 'Noodles');
       expect(category.toJson()['isLocalOnly'], true);
       expect(promo.toJson()['code'], 'NEW50');
-      expect(promo.copyWith(active: false).active, false);
+      expect(
+          promo.copyWith(const PromotionChanges(active: false)).active, false);
       expect(promo.copyWith().active, true);
     });
 

@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/restaurant.dart';
 import '../../services/api_service.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/shared_ui.dart';
 
 class CartScreen extends StatefulWidget {
   final Restaurant restaurant;
@@ -148,7 +148,7 @@ class _CartScreenState extends State<CartScreen> {
                             child: SizedBox(
                               width: 64,
                               height: 64,
-                              child: _imageBox(
+                              child: AppRemoteImageBox(
                                 imageUrl: item.imageUrl,
                                 fallbackIcon: Icons.fastfood,
                               ),
@@ -326,37 +326,6 @@ class _CartScreenState extends State<CartScreen> {
         const Spacer(),
         Text('฿${value.toStringAsFixed(2)}', style: style),
       ],
-    );
-  }
-
-  Widget _imageBox({
-    required String? imageUrl,
-    required IconData fallbackIcon,
-  }) {
-    if (imageUrl == null || imageUrl.isEmpty) {
-      return Container(
-        color: Colors.orange.withValues(alpha: 0.10),
-        child: Center(
-          child: Icon(fallbackIcon, size: 28, color: Colors.orange),
-        ),
-      );
-    }
-
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      placeholder: (_, __) => Container(
-        color: Colors.orange.withValues(alpha: 0.08),
-        child: const Center(
-          child: CircularProgressIndicator(color: Colors.orange),
-        ),
-      ),
-      errorWidget: (_, __, ___) => Container(
-        color: Colors.orange.withValues(alpha: 0.10),
-        child: Center(
-          child: Icon(fallbackIcon, size: 28, color: Colors.orange),
-        ),
-      ),
     );
   }
 }

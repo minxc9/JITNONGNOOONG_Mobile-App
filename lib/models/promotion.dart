@@ -55,31 +55,47 @@ class Promotion {
         'active': active,
       };
 
-  Promotion copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? code,
-    double? discountPercent,
-    int? maxUses,
-    int? currentUses,
-    String? validFrom,
-    String? validUntil,
-    String? targetGroup,
-    bool? active,
-  }) {
+  Promotion copyWith([PromotionChanges changes = const PromotionChanges()]) {
     return Promotion(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      code: code ?? this.code,
-      discountPercent: discountPercent ?? this.discountPercent,
-      maxUses: maxUses ?? this.maxUses,
-      currentUses: currentUses ?? this.currentUses,
-      validFrom: validFrom ?? this.validFrom,
-      validUntil: validUntil ?? this.validUntil,
-      targetGroup: targetGroup ?? this.targetGroup,
-      active: active ?? this.active,
+      id: changes.id ?? id,
+      title: changes.title ?? title,
+      description: changes.description ?? description,
+      code: changes.code ?? code,
+      discountPercent: changes.discountPercent ?? discountPercent,
+      maxUses: changes.maxUses ?? maxUses,
+      currentUses: changes.currentUses ?? currentUses,
+      validFrom: changes.validFrom ?? validFrom,
+      validUntil: changes.validUntil ?? validUntil,
+      targetGroup: changes.targetGroup ?? targetGroup,
+      active: changes.active ?? active,
     );
   }
+}
+
+class PromotionChanges {
+  final String? id;
+  final String? title;
+  final String? description;
+  final String? code;
+  final double? discountPercent;
+  final int? maxUses;
+  final int? currentUses;
+  final String? validFrom;
+  final String? validUntil;
+  final String? targetGroup;
+  final bool? active;
+
+  const PromotionChanges({
+    this.id,
+    this.title,
+    this.description,
+    this.code,
+    this.discountPercent,
+    this.maxUses,
+    this.currentUses,
+    this.validFrom,
+    this.validUntil,
+    this.targetGroup,
+    this.active,
+  });
 }

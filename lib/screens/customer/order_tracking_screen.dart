@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../models/order.dart';
 import '../../services/api_service.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/shared_ui.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   final int orderId;
@@ -310,9 +311,21 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return status.replaceAll('_', ' ');
   }
 
+  String _orderItemLabel(OrderItem item) {
+    if (item.menuItemName.isNotEmpty) {
+      return '${item.menuItemName} x${item.quantity}';
+    }
+    return 'Item #${item.id} x${item.quantity}';
+  }
+
   int _progressIndex(String status) {
     final index = _statusOrder.indexOf(status);
     return index < 0 ? 0 : index;
+  }
+
+  double _statusProgressValue(String status) {
+    if (status == 'CANCELLED') return 0;
+    return (_progressIndex(status) + 1) / _statusOrder.length;
   }
 
   String _deliveryStatusMessage(String status) {
@@ -349,6 +362,257 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return reached ? Colors.orange.withValues(alpha: 0.12) : Colors.grey[100]!;
   }
 
+  Widget _buildProgressCard(Order order) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              order.orderNumber,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(order.restaurantName ?? 'Restaurant'),
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: _statusProgressValue(order.status),
+              backgroundColor: Colors.grey[200],
+              color: Colors.orange,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _statusOrder.map((status) {
+                final reached =
+                    _progressIndex(order.status) >= _progressIndex(status);
+                return Chip(
+                  backgroundColor: _statusChipColor(reached),
+                  label: Text(_statusLabel(status)),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeliveryStatusCard(Order order) {
+    return Card(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 8,
+        ),
+        leading: const Icon(
+          Icons.delivery_dining,
+          color: Colors.orange,
+        ),
+        title: const Text('Delivery Status'),
+        subtitle: Text(_deliveryStatusMessage(order.status)),
+      ),
+    );
+  }
+
+  Widget _buildTrackingSection(Order order, _TrackingSnapshot tracking) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _trackingStatCard(
+                'Status',
+                _trackingStatusLabel(order),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _trackingStatCard(
+                'Ordered At',
+                order.createdAt ?? '-',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _trackingStatCard(
+                'ETA',
+                tracking.arrived ? '0 min' : '${tracking.etaMinutes} min',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _trackingStatCard(
+                'Route Distance',
+                '${tracking.remainingKm.toStringAsFixed(2)} km',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        _MockTrackingMap(snapshot: tracking),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(child: _gpsCard('Restaurant GPS', tracking.restaurant)),
+            const SizedBox(width: 12),
+            Expanded(child: _gpsCard('Rider GPS', tracking.rider)),
+            const SizedBox(width: 12),
+            Expanded(child: _gpsCard('Destination GPS', tracking.customer)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeliveryDetailsCard(Order order) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Delivery Details',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on_outlined),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    order.deliveryAddress ?? 'No delivery address provided',
+                  ),
+                ),
+              ],
+            ),
+            if (order.specialInstructions != null &&
+                order.specialInstructions!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.sticky_note_2_outlined),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(order.specialInstructions!),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderItemsCard(Order order) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Order Items',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...order.orderItems.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(_orderItemLabel(item))),
+                    Text(
+                      '฿${item.totalPrice.toStringAsFixed(2)}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Divider(),
+            Row(
+              children: [
+                const Text('Delivery Fee'),
+                const Spacer(),
+                Text('฿${order.deliveryFee.toStringAsFixed(2)}'),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Text(
+                  'Total',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                Text(
+                  '฿${order.totalAmount.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSavedReviewCard(Order order) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Card(
+        color: Colors.green.withValues(alpha: 0.08),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(Icons.reviews_outlined),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Restaurant rating: ${order.restaurantRating ?? 0}/5'),
+                    const SizedBox(height: 10),
+                    Text(order.restaurantReviewText ?? 'No comment'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = _order;
@@ -360,9 +624,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
         backgroundColor: Colors.orange,
       ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.orange),
-            )
+          ? const AppLoadingView()
           : order == null
               ? const Center(child: Text('Order not found'))
               : RefreshIndicator(
@@ -370,244 +632,17 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                     children: [
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                order.orderNumber,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(order.restaurantName ?? 'Restaurant'),
-                              const SizedBox(height: 16),
-                              LinearProgressIndicator(
-                                value: order.status == 'CANCELLED'
-                                    ? 0
-                                    : (_progressIndex(order.status) + 1) /
-                                        _statusOrder.length,
-                                backgroundColor: Colors.grey[200],
-                                color: Colors.orange,
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _statusOrder.map((status) {
-                                  final reached =
-                                      _progressIndex(order.status) >=
-                                          _progressIndex(status);
-                                  return Chip(
-                                    backgroundColor: _statusChipColor(reached),
-                                    label: Text(_statusLabel(status)),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      _buildProgressCard(order),
                       const SizedBox(height: 16),
-                      Card(
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          leading: const Icon(
-                            Icons.delivery_dining,
-                            color: Colors.orange,
-                          ),
-                          title: const Text('Delivery Status'),
-                          subtitle: Text(_deliveryStatusMessage(order.status)),
-                        ),
-                      ),
+                      _buildDeliveryStatusCard(order),
                       const SizedBox(height: 16),
                       if (tracking != null) ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _trackingStatCard(
-                                'Status',
-                                _trackingStatusLabel(order),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _trackingStatCard(
-                                'Ordered At',
-                                order.createdAt ?? '-',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _trackingStatCard(
-                                'ETA',
-                                tracking.arrived
-                                    ? '0 min'
-                                    : '${tracking.etaMinutes} min',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _trackingStatCard(
-                                'Route Distance',
-                                '${tracking.remainingKm.toStringAsFixed(2)} km',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        _MockTrackingMap(snapshot: tracking),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _gpsCard(
-                                'Restaurant GPS',
-                                tracking.restaurant,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _gpsCard(
-                                'Rider GPS',
-                                tracking.rider,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _gpsCard(
-                                'Destination GPS',
-                                tracking.customer,
-                              ),
-                            ),
-                          ],
-                        ),
+                        _buildTrackingSection(order, tracking),
                         const SizedBox(height: 20),
                       ],
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Delivery Details',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(Icons.location_on_outlined),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      order.deliveryAddress ??
-                                          'No delivery address provided',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (order.specialInstructions != null &&
-                                  order.specialInstructions!.isNotEmpty) ...[
-                                const SizedBox(height: 10),
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(Icons.sticky_note_2_outlined),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(order.specialInstructions!),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
+                      _buildDeliveryDetailsCard(order),
                       const SizedBox(height: 16),
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Order Items',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ...order.orderItems.map((item) {
-                                final name = item.menuItemName.isNotEmpty
-                                    ? item.menuItemName
-                                    : 'Item #${item.id}';
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text('$name x${item.quantity}'),
-                                      ),
-                                      Text(
-                                        '฿${item.totalPrice.toStringAsFixed(2)}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }),
-                              const Divider(),
-                              Row(
-                                children: [
-                                  const Text('Delivery Fee'),
-                                  const Spacer(),
-                                  Text(
-                                    '฿${order.deliveryFee.toStringAsFixed(2)}',
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  const Text(
-                                    'Total',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    '฿${order.totalAmount.toStringAsFixed(2)}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      _buildOrderItemsCard(order),
                       if (order.status == 'PENDING' ||
                           order.status == 'CONFIRMED')
                         Padding(
@@ -639,41 +674,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         ),
                       if (order.status == 'DELIVERED') const SizedBox.shrink(),
                       if (order.restaurantReviewId != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: Card(
-                            color: Colors.green.withValues(alpha: 0.08),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Padding(
-                                    padding: EdgeInsets.only(top: 2),
-                                    child: Icon(Icons.reviews_outlined),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Restaurant rating: ${order.restaurantRating ?? 0}/5',
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Text(
-                                          order.restaurantReviewText ??
-                                              'No comment',
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        _buildSavedReviewCard(order),
                     ],
                   ),
                 ),

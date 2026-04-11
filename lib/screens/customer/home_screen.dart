@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/restaurant.dart';
 import '../../services/api_service.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/shared_ui.dart';
 import '../../screens/auth/login_screen.dart';
 import 'restaurant_detail_screen.dart';
 import 'order_history_screen.dart';
@@ -110,8 +110,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   Widget _buildBody(List<Restaurant> visibleRestaurants) {
     if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: Colors.orange));
+      return const AppLoadingView();
     }
 
     if (_restaurants.isEmpty) {
@@ -231,9 +230,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             SizedBox(
               height: 176,
               width: double.infinity,
-              child: _imageBox(
+              child: AppRemoteImageBox(
                 imageUrl: restaurant.imageUrl,
                 fallbackIcon: Icons.restaurant,
+                fallbackIconSize: 48,
               ),
             ),
             Padding(
@@ -306,37 +306,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         if (restaurant.estimatedDeliveryTime != null)
           Chip(label: Text('${restaurant.estimatedDeliveryTime} mins')),
       ],
-    );
-  }
-
-  Widget _imageBox({
-    required String? imageUrl,
-    required IconData fallbackIcon,
-  }) {
-    if (imageUrl == null || imageUrl.isEmpty) {
-      return Container(
-        color: Colors.orange.withValues(alpha: 0.12),
-        child: Center(
-          child: Icon(fallbackIcon, size: 48, color: Colors.orange),
-        ),
-      );
-    }
-
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      placeholder: (_, __) => Container(
-        color: Colors.orange.withValues(alpha: 0.08),
-        child: const Center(
-          child: CircularProgressIndicator(color: Colors.orange),
-        ),
-      ),
-      errorWidget: (_, __, ___) => Container(
-        color: Colors.orange.withValues(alpha: 0.12),
-        child: Center(
-          child: Icon(fallbackIcon, size: 48, color: Colors.orange),
-        ),
-      ),
     );
   }
 }

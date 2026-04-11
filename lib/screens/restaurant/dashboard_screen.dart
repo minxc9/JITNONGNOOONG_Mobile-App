@@ -6,6 +6,7 @@ import '../../models/restaurant.dart';
 import '../../services/api_service.dart';
 import '../../services/local_storage_service.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/shared_ui.dart';
 import '../auth/login_screen.dart';
 
 class RestaurantDashboardScreen extends StatefulWidget {
@@ -361,7 +362,7 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
     if (restaurant == null) return;
     final updated = _promotions
         .map((item) => item.id == promotion.id
-            ? item.copyWith(active: !item.active)
+            ? item.copyWith(PromotionChanges(active: !item.active))
             : item)
         .toList();
     await LocalStorageService.saveRestaurantPromotions(restaurant.id, updated);
@@ -392,61 +393,50 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
           ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(76),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
-              child: Container(
-                height: 54,
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: TabBar(
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  labelColor: const Color(0xFFF26A21),
-                  unselectedLabelColor: Colors.white,
-                  labelStyle: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                  splashBorderRadius: BorderRadius.circular(18),
-                  overlayColor: WidgetStateProperty.all(
-                    Colors.white.withValues(alpha: 0.08),
-                  ),
-                  tabs: const [
-                    Tab(text: 'Overview'),
-                    Tab(text: 'Orders'),
-                    Tab(text: 'Menu'),
-                    Tab(text: 'Categories'),
-                    Tab(text: 'Promotions'),
+            child: DashboardTabBarContainer(
+              child: TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
+                labelColor: const Color(0xFFF26A21),
+                unselectedLabelColor: Colors.white,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+                splashBorderRadius: BorderRadius.circular(18),
+                overlayColor: WidgetStateProperty.all(
+                  Colors.white.withValues(alpha: 0.08),
+                ),
+                tabs: const [
+                  Tab(text: 'Overview'),
+                  Tab(text: 'Orders'),
+                  Tab(text: 'Menu'),
+                  Tab(text: 'Categories'),
+                  Tab(text: 'Promotions'),
+                ],
               ),
             ),
           ),
         ),
         body: _loading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.orange),
-              )
+            ? const AppLoadingView()
             : TabBarView(
                 children: [
                   _buildOverviewTab(),
@@ -797,20 +787,7 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
   }
 
   Widget _metricCard(String title, String value, IconData icon) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.orange.withValues(alpha: 0.15),
-          child: Icon(icon, color: Colors.orange),
-        ),
-        title: Text(title),
-        subtitle: Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-      ),
-    );
+    return AppMetricCard(title: title, value: value, icon: icon);
   }
 
   Widget _field(

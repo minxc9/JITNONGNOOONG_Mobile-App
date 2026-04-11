@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/order.dart';
 import '../../services/api_service.dart';
 import '../../utils/session_manager.dart';
+import '../../widgets/shared_ui.dart';
 import '../auth/login_screen.dart';
 import 'delivery_screen.dart';
 
@@ -88,31 +89,20 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           actions: [
             IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(80),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
-              child: Container(
-                height: 54,
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(22),
-                ),
-                child: const TabBar(
-                  tabs: [
-                    Tab(text: 'Available'),
-                    Tab(text: 'My Deliveries'),
-                  ],
-                ),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(80),
+            child: DashboardTabBarContainer(
+              child: TabBar(
+                tabs: [
+                  Tab(text: 'Available'),
+                  Tab(text: 'My Deliveries'),
+                ],
               ),
             ),
           ),
         ),
         body: _loading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.orange),
-              )
+            ? const AppLoadingView()
             : TabBarView(
                 children: [
                   _ordersList(
