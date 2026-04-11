@@ -88,13 +88,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               : RefreshIndicator(
                   onRefresh: _loadOrders,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                     itemCount: _orders.length,
                     itemBuilder: (_, index) {
                       final order = _orders[index];
                       final color = _statusColor(order.status);
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: const EdgeInsets.only(bottom: 16),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () async {
@@ -108,7 +108,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             _loadOrders();
                           },
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(18),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -143,7 +143,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
                                 Text(order.restaurantName ?? 'Restaurant'),
                                 const SizedBox(height: 4),
                                 Text(
@@ -162,7 +162,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                     ),
                                   ),
                                 ],
-                                const SizedBox(height: 14),
+                                const SizedBox(height: 18),
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(

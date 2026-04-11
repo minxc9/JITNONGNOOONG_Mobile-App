@@ -138,10 +138,14 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
           : order == null
               ? const Center(child: Text('Order not found'))
               : ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                   children: [
                     Card(
                       child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         title: Text(
                           order.orderNumber,
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -150,9 +154,10 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                         trailing: Chip(label: Text(order.status)),
                       ),
                     ),
+                    const SizedBox(height: 16),
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -197,9 +202,10 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -246,9 +252,10 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
                     Card(
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -262,7 +269,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                             const SizedBox(height: 12),
                             ...order.orderItems.map((item) {
                               return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
+                                padding: const EdgeInsets.only(bottom: 12),
                                 child: Row(
                                   children: [
                                     Expanded(
@@ -281,6 +288,7 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 18),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(

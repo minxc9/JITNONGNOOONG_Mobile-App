@@ -228,12 +228,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           actions: [
             IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
           ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Overview'),
-              Tab(text: 'Accounts'),
-              Tab(text: 'Promotions'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+              child: Container(
+                height: 54,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: const TabBar(
+                  tabs: [
+                    Tab(text: 'Overview'),
+                    Tab(text: 'Accounts'),
+                    Tab(text: 'Promotions'),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
         body: _loading
@@ -245,7 +259,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   RefreshIndicator(
                     onRefresh: _loadData,
                     child: ListView(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                       children: [
                         _metricCard(
                           'Today\'s Orders',
@@ -276,7 +290,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                     child: Column(
                       children: [
                         TextField(
@@ -296,8 +310,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               itemBuilder: (_, index) {
                                 final user = filteredUsers[index];
                                 return Card(
-                                  margin: const EdgeInsets.only(bottom: 12),
+                                  margin: const EdgeInsets.only(bottom: 16),
                                   child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 8,
+                                    ),
                                     leading: CircleAvatar(
                                       backgroundColor: Colors.orange,
                                       child: Text(
@@ -328,7 +346,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                         child: SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -350,15 +368,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                             ? const Center(child: Text('No promotions yet'))
                             : ListView.builder(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                                  horizontal: 20,
                                 ),
                                 itemCount: _promotions.length,
                                 itemBuilder: (_, index) {
                                   final promotion = _promotions[index];
                                   return Card(
-                                    margin: const EdgeInsets.only(bottom: 12),
+                                    margin: const EdgeInsets.only(bottom: 16),
                                     child: Padding(
-                                      padding: const EdgeInsets.all(16),
+                                      padding: const EdgeInsets.all(20),
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,

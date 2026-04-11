@@ -8,6 +8,15 @@ import '../utils/session_manager.dart';
 
 class ApiService {
   static const String baseUrl = "http://127.0.0.1:8080/api/v1";
+  static http.Client _client = http.Client();
+
+  static void setHttpClient(http.Client client) {
+    _client = client;
+  }
+
+  static void resetHttpClient() {
+    _client = http.Client();
+  }
 
   static Future<Map<String, String>> _headers() async {
     final token = await SessionManager.getToken();
@@ -18,7 +27,7 @@ class ApiService {
   }
 
   static Future<http.Response> login(String email, String password) async {
-    return await http.post(
+    return await _client.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
@@ -26,7 +35,7 @@ class ApiService {
   }
 
   static Future<http.Response> verifyOtp(String email, String otp) async {
-    return await http.post(
+    return await _client.post(
       Uri.parse('$baseUrl/auth/otp'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'otp': otp}),
@@ -34,7 +43,7 @@ class ApiService {
   }
 
   static Future<http.Response> register(Map<String, dynamic> data) async {
-    return await http.post(
+    return await _client.post(
       Uri.parse('$baseUrl/auth/register'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(data),
@@ -42,42 +51,42 @@ class ApiService {
   }
 
   static Future<http.Response> getRestaurants() async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/restaurants'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getMenu(int restaurantId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/restaurants/$restaurantId/menu'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getRestaurantByOwner(int ownerId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/restaurants/owner/$ownerId'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getRestaurantById(int restaurantId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/restaurants/$restaurantId'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getRestaurantCategories(int restaurantId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/restaurants/$restaurantId/categories'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getRestaurantReviews(int restaurantId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/restaurants/$restaurantId/reviews'),
       headers: await _headers(),
     );
@@ -87,7 +96,7 @@ class ApiService {
     int restaurantId,
     Map<String, dynamic> data,
   ) async {
-    return await http.post(
+    return await _client.post(
       Uri.parse('$baseUrl/restaurants/$restaurantId/menu'),
       headers: await _headers(),
       body: jsonEncode(data),
@@ -99,7 +108,7 @@ class ApiService {
     int itemId,
     Map<String, dynamic> data,
   ) async {
-    return await http.put(
+    return await _client.put(
       Uri.parse('$baseUrl/restaurants/$restaurantId/menu/$itemId'),
       headers: await _headers(),
       body: jsonEncode(data),
@@ -108,7 +117,7 @@ class ApiService {
 
   static Future<http.Response> deleteMenuItem(
       int restaurantId, int itemId) async {
-    return await http.delete(
+    return await _client.delete(
       Uri.parse('$baseUrl/restaurants/$restaurantId/menu/$itemId'),
       headers: await _headers(),
     );
@@ -118,7 +127,7 @@ class ApiService {
     int restaurantId,
     Map<String, dynamic> data,
   ) async {
-    return await http.post(
+    return await _client.post(
       Uri.parse('$baseUrl/restaurants/$restaurantId/reviews'),
       headers: await _headers(),
       body: jsonEncode(data),
@@ -126,7 +135,7 @@ class ApiService {
   }
 
   static Future<http.Response> createOrder(Map<String, dynamic> data) async {
-    return await http.post(
+    return await _client.post(
       Uri.parse('$baseUrl/orders'),
       headers: await _headers(),
       body: jsonEncode(data),
@@ -134,21 +143,21 @@ class ApiService {
   }
 
   static Future<http.Response> getCustomerOrders(int customerId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/orders/customer/$customerId'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getRestaurantOrders(int restaurantId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/orders/restaurant/$restaurantId'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getOrderById(int orderId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/orders/$orderId'),
       headers: await _headers(),
     );
@@ -160,7 +169,7 @@ class ApiService {
     int? updatedBy,
     String? notes,
   }) async {
-    return await http.put(
+    return await _client.put(
       Uri.parse('$baseUrl/orders/$orderId/status'),
       headers: await _headers(),
       body: jsonEncode({
@@ -172,14 +181,14 @@ class ApiService {
   }
 
   static Future<http.Response> getAvailableOrders() async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/orders/rider/available'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getRiderOrders(int riderId) async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/orders/rider/$riderId'),
       headers: await _headers(),
     );
@@ -194,14 +203,14 @@ class ApiService {
   }
 
   static Future<http.Response> cancelOrder(int orderId) async {
-    return await http.delete(
+    return await _client.delete(
       Uri.parse('$baseUrl/orders/$orderId'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> processPayment(Map<String, dynamic> data) async {
-    return await http.post(
+    return await _client.post(
       Uri.parse('$baseUrl/payments/process'),
       headers: await _headers(),
       body: jsonEncode(data),
@@ -209,7 +218,7 @@ class ApiService {
   }
 
   static Future<http.Response> getAllUsers() async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/admin/users'),
       headers: await _headers(),
     );
@@ -217,7 +226,7 @@ class ApiService {
 
   static Future<http.Response> updateUserStatus(
       int userId, bool isActive) async {
-    return await http.put(
+    return await _client.put(
       Uri.parse('$baseUrl/admin/users/$userId/status'),
       headers: await _headers(),
       body: jsonEncode({'isActive': isActive}),
@@ -225,14 +234,14 @@ class ApiService {
   }
 
   static Future<http.Response> getAdminOrderStats() async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/orders/admin/stats'),
       headers: await _headers(),
     );
   }
 
   static Future<http.Response> getAdminRestaurantStats() async {
-    return await http.get(
+    return await _client.get(
       Uri.parse('$baseUrl/restaurants/stats'),
       headers: await _headers(),
     );

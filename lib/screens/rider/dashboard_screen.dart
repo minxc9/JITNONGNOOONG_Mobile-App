@@ -88,11 +88,25 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           actions: [
             IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
           ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Available'),
-              Tab(text: 'My Deliveries'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+              child: Container(
+                height: 54,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: const TabBar(
+                  tabs: [
+                    Tab(text: 'Available'),
+                    Tab(text: 'My Deliveries'),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
         body: _loading
@@ -151,14 +165,14 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView.builder(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         itemCount: orders.length,
         itemBuilder: (_, index) {
           final order = orders[index];
           return Card(
-            margin: const EdgeInsets.only(bottom: 12),
+            margin: const EdgeInsets.only(bottom: 16),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -177,7 +191,7 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                   Text('Status: ${order.status}'),
                   const SizedBox(height: 4),
                   Text('Total: ฿${order.totalAmount.toStringAsFixed(2)}'),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

@@ -357,11 +357,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
               : RefreshIndicator(
                   onRefresh: _loadOrder,
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                     children: [
                       Card(
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -403,8 +403,13 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
                       Card(
                         child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 8,
+                          ),
                           leading: const Icon(
                             Icons.delivery_dining,
                             color: Colors.orange,
@@ -413,6 +418,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                           subtitle: Text(_deliveryStatusMessage(order.status)),
                         ),
                       ),
+                      const SizedBox(height: 16),
                       if (tracking != null) ...[
                         Row(
                           children: [
@@ -431,7 +437,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
                         Row(
                           children: [
                             Expanded(
@@ -451,9 +457,9 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                         _MockTrackingMap(snapshot: tracking),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 20),
                         Row(
                           children: [
                             Expanded(
@@ -478,11 +484,11 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                       ],
                       Card(
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -525,9 +531,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 16),
                       Card(
                         child: Padding(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -544,7 +551,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                                     ? item.menuItemName
                                     : 'Item #${item.id}';
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.only(bottom: 12),
                                   child: Row(
                                     children: [
                                       Expanded(
@@ -595,7 +602,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       if (order.status == 'PENDING' ||
                           order.status == 'CONFIRMED')
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(top: 18, bottom: 14),
                           child: OutlinedButton.icon(
                             onPressed: _cancelOrder,
                             icon: const Icon(Icons.cancel_outlined),
@@ -605,7 +612,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                       if (order.status == 'DELIVERED' &&
                           order.restaurantReviewId == null)
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(top: 18, bottom: 14),
                           child: ElevatedButton.icon(
                             onPressed: _showRestaurantReviewDialog,
                             style: ElevatedButton.styleFrom(
@@ -623,15 +630,39 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                         ),
                       if (order.status == 'DELIVERED') const SizedBox.shrink(),
                       if (order.restaurantReviewId != null)
-                        Card(
-                          color: Colors.green.withValues(alpha: 0.08),
-                          child: ListTile(
-                            leading: const Icon(Icons.reviews_outlined),
-                            title: Text(
-                              'Restaurant rating: ${order.restaurantRating ?? 0}/5',
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: Card(
+                            color: Colors.green.withValues(alpha: 0.08),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 2),
+                                    child: Icon(Icons.reviews_outlined),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Restaurant rating: ${order.restaurantRating ?? 0}/5',
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          order.restaurantReviewText ??
+                                              'No comment',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            subtitle: Text(
-                                order.restaurantReviewText ?? 'No comment'),
                           ),
                         ),
                     ],
@@ -643,7 +674,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   Widget _trackingStatCard(String label, String value) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -672,7 +703,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   Widget _gpsCard(String title, _Point point) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -705,7 +736,7 @@ class _MockTrackingMap extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

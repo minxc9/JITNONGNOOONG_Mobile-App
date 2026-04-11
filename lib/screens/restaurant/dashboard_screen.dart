@@ -397,15 +397,57 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
           actions: [
             IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
           ],
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Overview'),
-              Tab(text: 'Orders'),
-              Tab(text: 'Menu'),
-              Tab(text: 'Categories'),
-              Tab(text: 'Promotions'),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(76),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+              child: Container(
+                height: 54,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  dividerColor: Colors.transparent,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  labelColor: const Color(0xFFF26A21),
+                  unselectedLabelColor: Colors.white,
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                  splashBorderRadius: BorderRadius.circular(18),
+                  overlayColor: WidgetStateProperty.all(
+                    Colors.white.withValues(alpha: 0.08),
+                  ),
+                  tabs: const [
+                    Tab(text: 'Overview'),
+                    Tab(text: 'Orders'),
+                    Tab(text: 'Menu'),
+                    Tab(text: 'Categories'),
+                    Tab(text: 'Promotions'),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
         body: _loading
@@ -417,7 +459,7 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                   RefreshIndicator(
                     onRefresh: _loadData,
                     child: ListView(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                       children: [
                         _metricCard('Pending Orders', '$pendingOrders',
                             Icons.receipt_long_outlined),
@@ -430,7 +472,7 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                         if (_reviews.isNotEmpty)
                           Card(
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(20),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -459,14 +501,14 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                   RefreshIndicator(
                     onRefresh: _loadData,
                     child: ListView.builder(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                       itemCount: _orders.length,
                       itemBuilder: (_, index) {
                         final order = _orders[index];
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
+                          margin: const EdgeInsets.only(bottom: 16),
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -525,7 +567,7 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                   Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
                         child: SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -547,12 +589,12 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                       ),
                       Expanded(
                         child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
                           itemCount: _menuItems.length,
                           itemBuilder: (_, index) {
                             final item = _menuItems[index];
                             return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
+                              margin: const EdgeInsets.only(bottom: 16),
                               child: ListTile(
                                 title: Text(item.name),
                                 subtitle: Text(
@@ -585,7 +627,7 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                   Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                         child: SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -601,15 +643,15 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 14),
                       Expanded(
                         child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
                           itemCount: _categories.length,
                           itemBuilder: (_, index) {
                             final category = _categories[index];
                             return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
+                              margin: const EdgeInsets.only(bottom: 16),
                               child: ListTile(
                                 title: Text(category.name),
                                 subtitle: Text(
@@ -639,7 +681,7 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                   Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
                         child: SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -661,15 +703,15 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
                             ? const Center(child: Text('No promotions yet'))
                             : ListView.builder(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                                  horizontal: 20,
                                 ),
                                 itemCount: _promotions.length,
                                 itemBuilder: (_, index) {
                                   final promotion = _promotions[index];
                                   return Card(
-                                    margin: const EdgeInsets.only(bottom: 12),
+                                    margin: const EdgeInsets.only(bottom: 16),
                                     child: Padding(
-                                      padding: const EdgeInsets.all(16),
+                                      padding: const EdgeInsets.all(20),
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
