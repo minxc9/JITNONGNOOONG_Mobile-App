@@ -205,20 +205,26 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     setState(() => _promotions = updated);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final filteredUsers = _users.where((user) {
-      final query = _search.toLowerCase();
+  List<User> get _filteredUsers {
+    final query = _search.toLowerCase();
+    return _users.where((user) {
       return user.name.toLowerCase().contains(query) ||
           user.email.toLowerCase().contains(query) ||
           user.role.toLowerCase().contains(query);
     }).toList();
+  }
 
-    final customers = _users.where((user) => user.role == 'CUSTOMER').length;
-    final activeRiders = _users
+  int get _customerCount =>
+      _users.where((user) => user.role == 'CUSTOMER').length;
+
+  int get _activeRiderCount {
+    return _users
         .where((user) => user.role == 'RIDER' && (user.isActive ?? true))
         .length;
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -256,199 +262,190 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               )
             : TabBarView(
                 children: [
-                  RefreshIndicator(
-                    onRefresh: _loadData,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                      children: [
-                        _metricCard(
-                          'Today\'s Orders',
-                          '${_orderStats?.todayOrders ?? 0}',
-                          Icons.shopping_bag_outlined,
-                        ),
-                        _metricCard(
-                          'Month Revenue',
-                          '฿${(_orderStats?.monthRevenue ?? 0).toStringAsFixed(2)}',
-                          Icons.paid_outlined,
-                        ),
-                        _metricCard(
-                          'Active Restaurants',
-                          '${_restaurantStats?.activeRestaurants ?? 0}',
-                          Icons.storefront_outlined,
-                        ),
-                        _metricCard(
-                          'Active Riders',
-                          '$activeRiders',
-                          Icons.delivery_dining_outlined,
-                        ),
-                        _metricCard(
-                          'Customers',
-                          '$customers',
-                          Icons.people_outline,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                    child: Column(
-                      children: [
-                        TextField(
-                          onChanged: (value) => setState(() => _search = value),
-                          decoration: const InputDecoration(
-                            prefixIcon: Icon(Icons.search),
-                            hintText: 'Search accounts',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: RefreshIndicator(
-                            onRefresh: _loadData,
-                            child: ListView.builder(
-                              itemCount: filteredUsers.length,
-                              itemBuilder: (_, index) {
-                                final user = filteredUsers[index];
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  child: ListTile(
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                      vertical: 8,
-                                    ),
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.orange,
-                                      child: Text(
-                                        user.name.isEmpty
-                                            ? '?'
-                                            : user.name[0].toUpperCase(),
-                                        style: const TextStyle(
-                                            color: Colors.white),
-                                      ),
-                                    ),
-                                    title: Text(user.name),
-                                    subtitle:
-                                        Text('${user.email} • ${user.role}'),
-                                    trailing: Switch(
-                                      activeThumbColor: Colors.orange,
-                                      value: user.isActive ?? true,
-                                      onChanged: (_) => _toggleUser(user),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _showPromotionDialog,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                            ),
-                            icon: const Icon(Icons.add_circle,
-                                color: Colors.white),
-                            label: const Text(
-                              'Create Promotion',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: _promotions.isEmpty
-                            ? const Center(child: Text('No promotions yet'))
-                            : ListView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                itemCount: _promotions.length,
-                                itemBuilder: (_, index) {
-                                  final promotion = _promotions[index];
-                                  return Card(
-                                    margin: const EdgeInsets.only(bottom: 16),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  promotion.title,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                              ),
-                                              Chip(
-                                                label: Text(
-                                                  promotion.active
-                                                      ? 'Active'
-                                                      : 'Inactive',
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                              '${promotion.code} • ${promotion.targetGroup}'),
-                                          const SizedBox(height: 6),
-                                          Text(promotion.description),
-                                          const SizedBox(height: 10),
-                                          Text(
-                                            'Discount ${promotion.discountPercent.toStringAsFixed(0)}% • ${promotion.currentUses}/${promotion.maxUses} uses',
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: OutlinedButton(
-                                                  onPressed: () =>
-                                                      _togglePromotion(
-                                                          promotion),
-                                                  child: Text(
-                                                    promotion.active
-                                                        ? 'Deactivate'
-                                                        : 'Activate',
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              IconButton(
-                                                onPressed: () =>
-                                                    _deletePromotion(
-                                                  promotion.id,
-                                                ),
-                                                icon: const Icon(
-                                                  Icons.delete_outline,
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
-                  ),
+                  _buildOverviewTab(),
+                  _buildAccountsTab(),
+                  _buildPromotionsTab(),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildOverviewTab() {
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        children: [
+          _metricCard(
+            'Today\'s Orders',
+            '${_orderStats?.todayOrders ?? 0}',
+            Icons.shopping_bag_outlined,
+          ),
+          _metricCard(
+            'Month Revenue',
+            '฿${(_orderStats?.monthRevenue ?? 0).toStringAsFixed(2)}',
+            Icons.paid_outlined,
+          ),
+          _metricCard(
+            'Active Restaurants',
+            '${_restaurantStats?.activeRestaurants ?? 0}',
+            Icons.storefront_outlined,
+          ),
+          _metricCard(
+            'Active Riders',
+            '$_activeRiderCount',
+            Icons.delivery_dining_outlined,
+          ),
+          _metricCard(
+            'Customers',
+            '$_customerCount',
+            Icons.people_outline,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountsTab() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      child: Column(
+        children: [
+          TextField(
+            onChanged: (value) => setState(() => _search = value),
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              hintText: 'Search accounts',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadData,
+              child: ListView.builder(
+                itemCount: _filteredUsers.length,
+                itemBuilder: (_, index) =>
+                    _buildUserCard(_filteredUsers[index]),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserCard(User user) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: Colors.orange,
+          child: Text(
+            user.name.isEmpty ? '?' : user.name[0].toUpperCase(),
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+        title: Text(user.name),
+        subtitle: Text('${user.email} • ${user.role}'),
+        trailing: Switch(
+          activeThumbColor: Colors.orange,
+          value: user.isActive ?? true,
+          onChanged: (_) => _toggleUser(user),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromotionsTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showPromotionDialog,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              icon: const Icon(Icons.add_circle, color: Colors.white),
+              label: const Text(
+                'Create Promotion',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _promotions.isEmpty
+              ? const Center(child: Text('No promotions yet'))
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _promotions.length,
+                  itemBuilder: (_, index) =>
+                      _buildPromotionCard(_promotions[index]),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPromotionCard(Promotion promotion) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    promotion.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                Chip(
+                  label: Text(promotion.active ? 'Active' : 'Inactive'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text('${promotion.code} • ${promotion.targetGroup}'),
+            const SizedBox(height: 6),
+            Text(promotion.description),
+            const SizedBox(height: 10),
+            Text(
+              'Discount ${promotion.discountPercent.toStringAsFixed(0)}% • ${promotion.currentUses}/${promotion.maxUses} uses',
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _togglePromotion(promotion),
+                    child: Text(
+                      promotion.active ? 'Deactivate' : 'Activate',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  onPressed: () => _deletePromotion(promotion.id),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

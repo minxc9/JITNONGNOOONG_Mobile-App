@@ -129,13 +129,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     final remainingKm = _distanceKm(rider, customer);
     final etaMinutes = math.max((remainingKm / 0.65).ceil(), 1);
     final arrived = remainingKm <= 0.15;
-    final phaseLabel = arrived
-        ? 'Rider arrived'
-        : progress >= 0.75
-            ? 'Rider is nearby'
-            : progress >= 0.2
-                ? 'Rider is on the way'
-                : 'Pickup completed';
+    final phaseLabel = _phaseLabelForProgress(
+      progress: progress,
+      arrived: arrived,
+    );
 
     return _TrackingSnapshot(
       restaurant: restaurant,
@@ -164,6 +161,16 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   double _degToRad(double degrees) => degrees * math.pi / 180;
+
+  String _phaseLabelForProgress({
+    required double progress,
+    required bool arrived,
+  }) {
+    if (arrived) return 'Rider arrived';
+    if (progress >= 0.75) return 'Rider is nearby';
+    if (progress >= 0.2) return 'Rider is on the way';
+    return 'Pickup completed';
+  }
 
   Future<void> _showArrivalPrompt() async {
     if (!mounted) return;
@@ -338,6 +345,10 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     return _statusLabel(order.status);
   }
 
+  Color _statusChipColor(bool reached) {
+    return reached ? Colors.orange.withValues(alpha: 0.12) : Colors.grey[100]!;
+  }
+
   @override
   Widget build(BuildContext context) {
     final order = _order;
@@ -392,9 +403,7 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
                                       _progressIndex(order.status) >=
                                           _progressIndex(status);
                                   return Chip(
-                                    backgroundColor: reached
-                                        ? Colors.orange.withValues(alpha: 0.12)
-                                        : Colors.grey[100],
+                                    backgroundColor: _statusChipColor(reached),
                                     label: Text(_statusLabel(status)),
                                   );
                                 }).toList(),

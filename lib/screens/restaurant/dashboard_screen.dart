@@ -380,13 +380,6 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final restaurant = _restaurant;
-    final pendingOrders =
-        _orders.where((order) => order.status != 'DELIVERED').length;
-    final completedOrders =
-        _orders.where((order) => order.status == 'DELIVERED').length;
-    final revenue = _orders
-        .where((order) => order.status == 'DELIVERED')
-        .fold<double>(0, (sum, order) => sum + order.totalAmount);
 
     return DefaultTabController(
       length: 5,
@@ -456,328 +449,349 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
               )
             : TabBarView(
                 children: [
-                  RefreshIndicator(
-                    onRefresh: _loadData,
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                      children: [
-                        _metricCard('Pending Orders', '$pendingOrders',
-                            Icons.receipt_long_outlined),
-                        _metricCard('Delivered Orders', '$completedOrders',
-                            Icons.check_circle_outline),
-                        _metricCard('Revenue', '฿${revenue.toStringAsFixed(2)}',
-                            Icons.payments_outlined),
-                        _metricCard('Reviews', '${_reviews.length}',
-                            Icons.star_border_outlined),
-                        if (_reviews.isNotEmpty)
-                          Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Recent Reviews',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ..._reviews.take(3).map((review) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(bottom: 10),
-                                        child: Text(
-                                          '${review.customerName}: ${review.rating}/5 ${review.reviewText ?? ''}',
-                                        ),
-                                      )),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  RefreshIndicator(
-                    onRefresh: _loadData,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                      itemCount: _orders.length,
-                      itemBuilder: (_, index) {
-                        final order = _orders[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  order.orderNumber,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text('Status: ${order.status}'),
-                                Text(
-                                  'Total: ฿${order.totalAmount.toStringAsFixed(2)}',
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    if (order.status == 'PENDING')
-                                      _statusButton(
-                                        'Confirm',
-                                        Colors.orange,
-                                        () => _updateOrderStatus(
-                                          order,
-                                          'CONFIRMED',
-                                        ),
-                                      ),
-                                    if (order.status == 'CONFIRMED')
-                                      _statusButton(
-                                        'Preparing',
-                                        Colors.deepOrange,
-                                        () => _updateOrderStatus(
-                                          order,
-                                          'PREPARING',
-                                        ),
-                                      ),
-                                    if (order.status == 'PREPARING')
-                                      _statusButton(
-                                        'Ready for Pickup',
-                                        Colors.green,
-                                        () => _updateOrderStatus(
-                                          order,
-                                          'READY_FOR_PICKUP',
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _categories
-                                    .where((category) => !category.isLocalOnly)
-                                    .isEmpty
-                                ? null
-                                : () => _showMenuItemDialog(),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                            ),
-                            icon: const Icon(Icons.add, color: Colors.white),
-                            label: const Text(
-                              'Add Menu Item',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
-                          itemCount: _menuItems.length,
-                          itemBuilder: (_, index) {
-                            final item = _menuItems[index];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: ListTile(
-                                title: Text(item.name),
-                                subtitle: Text(
-                                  '${item.category ?? 'No category'} • ฿${item.price.toStringAsFixed(2)}',
-                                ),
-                                trailing: Wrap(
-                                  spacing: 4,
-                                  children: [
-                                    IconButton(
-                                      onPressed: () =>
-                                          _showMenuItemDialog(existing: item),
-                                      icon: const Icon(Icons.edit_outlined),
-                                    ),
-                                    IconButton(
-                                      onPressed: () => _deleteMenuItem(item),
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.red,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _showCategoryDialog,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                            ),
-                            icon: const Icon(Icons.add, color: Colors.white),
-                            label: const Text(
-                              'Add Category',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-                          itemCount: _categories.length,
-                          itemBuilder: (_, index) {
-                            final category = _categories[index];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              child: ListTile(
-                                title: Text(category.name),
-                                subtitle: Text(
-                                  category.description?.isNotEmpty == true
-                                      ? category.description!
-                                      : category.isLocalOnly
-                                          ? 'Local mobile category'
-                                          : 'Server category',
-                                ),
-                                trailing: category.isLocalOnly
-                                    ? IconButton(
-                                        onPressed: () =>
-                                            _removeLocalCategory(category),
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.red,
-                                        ),
-                                      )
-                                    : const Icon(Icons.cloud_done_outlined),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _showPromotionDialog,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                            ),
-                            icon:
-                                const Icon(Icons.campaign, color: Colors.white),
-                            label: const Text(
-                              'Create Promotion',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: _promotions.isEmpty
-                            ? const Center(child: Text('No promotions yet'))
-                            : ListView.builder(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                itemCount: _promotions.length,
-                                itemBuilder: (_, index) {
-                                  final promotion = _promotions[index];
-                                  return Card(
-                                    margin: const EdgeInsets.only(bottom: 16),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(20),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  promotion.title,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                              ),
-                                              Chip(
-                                                label: Text(
-                                                  promotion.active
-                                                      ? 'Active'
-                                                      : 'Inactive',
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                              '${promotion.code} • ${promotion.discountPercent.toStringAsFixed(0)}% off'),
-                                          const SizedBox(height: 6),
-                                          Text(promotion.description),
-                                          const SizedBox(height: 12),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: OutlinedButton(
-                                                  onPressed: () =>
-                                                      _togglePromotion(
-                                                          promotion),
-                                                  child: Text(
-                                                    promotion.active
-                                                        ? 'Deactivate'
-                                                        : 'Activate',
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              IconButton(
-                                                onPressed: () =>
-                                                    _deletePromotion(promotion),
-                                                icon: const Icon(
-                                                  Icons.delete_outline,
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
-                  ),
+                  _buildOverviewTab(),
+                  _buildOrdersTab(),
+                  _buildMenuTab(),
+                  _buildCategoriesTab(),
+                  _buildPromotionsTab(),
                 ],
               ),
+      ),
+    );
+  }
+
+  int get _pendingOrderCount =>
+      _orders.where((order) => order.status != 'DELIVERED').length;
+
+  int get _completedOrderCount =>
+      _orders.where((order) => order.status == 'DELIVERED').length;
+
+  double get _deliveredRevenue {
+    return _orders
+        .where((order) => order.status == 'DELIVERED')
+        .fold<double>(0, (sum, order) => sum + order.totalAmount);
+  }
+
+  bool get _canManageMenu =>
+      _categories.where((category) => !category.isLocalOnly).isNotEmpty;
+
+  Widget _buildOverviewTab() {
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        children: [
+          _metricCard(
+            'Pending Orders',
+            '$_pendingOrderCount',
+            Icons.receipt_long_outlined,
+          ),
+          _metricCard(
+            'Delivered Orders',
+            '$_completedOrderCount',
+            Icons.check_circle_outline,
+          ),
+          _metricCard(
+            'Revenue',
+            '฿${_deliveredRevenue.toStringAsFixed(2)}',
+            Icons.payments_outlined,
+          ),
+          _metricCard(
+            'Reviews',
+            '${_reviews.length}',
+            Icons.star_border_outlined,
+          ),
+          if (_reviews.isNotEmpty) _buildRecentReviewsCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentReviewsCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Recent Reviews',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ..._reviews.take(3).map(
+                  (review) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      '${review.customerName}: ${review.rating}/5 ${review.reviewText ?? ''}',
+                    ),
+                  ),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrdersTab() {
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        itemCount: _orders.length,
+        itemBuilder: (_, index) => _buildOrderCard(_orders[index]),
+      ),
+    );
+  }
+
+  Widget _buildOrderCard(Order order) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              order.orderNumber,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text('Status: ${order.status}'),
+            Text('Total: ฿${order.totalAmount.toStringAsFixed(2)}'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _buildStatusActions(order),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildStatusActions(Order order) {
+    if (order.status == 'PENDING') {
+      return [
+        _statusButton(
+          'Confirm',
+          Colors.orange,
+          () => _updateOrderStatus(order, 'CONFIRMED'),
+        ),
+      ];
+    }
+    if (order.status == 'CONFIRMED') {
+      return [
+        _statusButton(
+          'Preparing',
+          Colors.deepOrange,
+          () => _updateOrderStatus(order, 'PREPARING'),
+        ),
+      ];
+    }
+    if (order.status == 'PREPARING') {
+      return [
+        _statusButton(
+          'Ready for Pickup',
+          Colors.green,
+          () => _updateOrderStatus(order, 'READY_FOR_PICKUP'),
+        ),
+      ];
+    }
+    return const [];
+  }
+
+  Widget _buildMenuTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _canManageMenu ? () => _showMenuItemDialog() : null,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'Add Menu Item',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+            itemCount: _menuItems.length,
+            itemBuilder: (_, index) => _buildMenuItemTile(_menuItems[index]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuItemTile(MenuItem item) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListTile(
+        title: Text(item.name),
+        subtitle: Text(
+          '${item.category ?? 'No category'} • ฿${item.price.toStringAsFixed(2)}',
+        ),
+        trailing: Wrap(
+          spacing: 4,
+          children: [
+            IconButton(
+              onPressed: () => _showMenuItemDialog(existing: item),
+              icon: const Icon(Icons.edit_outlined),
+            ),
+            IconButton(
+              onPressed: () => _deleteMenuItem(item),
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoriesTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showCategoryDialog,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'Add Category',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+            itemCount: _categories.length,
+            itemBuilder: (_, index) => _buildCategoryTile(_categories[index]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryTile(MenuCategory category) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListTile(
+        title: Text(category.name),
+        subtitle: Text(_categorySubtitle(category)),
+        trailing: category.isLocalOnly
+            ? IconButton(
+                onPressed: () => _removeLocalCategory(category),
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+              )
+            : const Icon(Icons.cloud_done_outlined),
+      ),
+    );
+  }
+
+  String _categorySubtitle(MenuCategory category) {
+    if (category.description?.isNotEmpty == true) return category.description!;
+    return category.isLocalOnly ? 'Local mobile category' : 'Server category';
+  }
+
+  Widget _buildPromotionsTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showPromotionDialog,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              icon: const Icon(Icons.campaign, color: Colors.white),
+              label: const Text(
+                'Create Promotion',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _promotions.isEmpty
+              ? const Center(child: Text('No promotions yet'))
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _promotions.length,
+                  itemBuilder: (_, index) =>
+                      _buildPromotionCard(_promotions[index]),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPromotionCard(Promotion promotion) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    promotion.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                Chip(
+                  label: Text(promotion.active ? 'Active' : 'Inactive'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${promotion.code} • ${promotion.discountPercent.toStringAsFixed(0)}% off',
+            ),
+            const SizedBox(height: 6),
+            Text(promotion.description),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _togglePromotion(promotion),
+                    child: Text(
+                      promotion.active ? 'Deactivate' : 'Activate',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  onPressed: () => _deletePromotion(promotion),
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

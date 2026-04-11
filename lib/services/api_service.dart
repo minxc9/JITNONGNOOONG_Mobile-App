@@ -8,6 +8,8 @@ import '../utils/session_manager.dart';
 
 class ApiService {
   static const String baseUrl = "http://127.0.0.1:8080/api/v1";
+  static const _contentTypeHeader = 'Content-Type';
+  static const _jsonMimeType = 'application/json';
   static http.Client _client = http.Client();
 
   static void setHttpClient(http.Client client) {
@@ -21,85 +23,102 @@ class ApiService {
   static Future<Map<String, String>> _headers() async {
     final token = await SessionManager.getToken();
     return {
-      'Content-Type': 'application/json',
+      _contentTypeHeader: _jsonMimeType,
       if (token != null) 'Authorization': 'Bearer $token',
     };
   }
 
+  static Uri _uri(String path) => Uri.parse('$baseUrl$path');
+
+  static Future<http.Response> _postJson(
+    String path, {
+    Map<String, dynamic>? body,
+    bool authenticated = false,
+  }) async {
+    return _client.post(
+      _uri(path),
+      headers: authenticated
+          ? await _headers()
+          : const {_contentTypeHeader: _jsonMimeType},
+      body: body == null ? null : jsonEncode(body),
+    );
+  }
+
+  static Future<http.Response> _putJson(
+    String path, {
+    Map<String, dynamic>? body,
+  }) async {
+    return _client.put(
+      _uri(path),
+      headers: await _headers(),
+      body: body == null ? null : jsonEncode(body),
+    );
+  }
+
+  static Future<http.Response> _get(String path) async {
+    return _client.get(
+      _uri(path),
+      headers: await _headers(),
+    );
+  }
+
+  static Future<http.Response> _delete(String path) async {
+    return _client.delete(
+      _uri(path),
+      headers: await _headers(),
+    );
+  }
+
   static Future<http.Response> login(String email, String password) async {
-    return await _client.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
+    return _postJson(
+      '/auth/login',
+      body: {'email': email, 'password': password},
     );
   }
 
   static Future<http.Response> verifyOtp(String email, String otp) async {
-    return await _client.post(
-      Uri.parse('$baseUrl/auth/otp'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'otp': otp}),
+    return _postJson(
+      '/auth/otp',
+      body: {'email': email, 'otp': otp},
     );
   }
 
   static Future<http.Response> register(Map<String, dynamic> data) async {
-    return await _client.post(
-      Uri.parse('$baseUrl/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
+    return _postJson('/auth/register', body: data);
   }
 
   static Future<http.Response> getRestaurants() async {
-    return await _client.get(
-      Uri.parse('$baseUrl/restaurants'),
-      headers: await _headers(),
-    );
+    return _get('/restaurants');
   }
 
   static Future<http.Response> getMenu(int restaurantId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/restaurants/$restaurantId/menu'),
-      headers: await _headers(),
-    );
+    return _get('/restaurants/$restaurantId/menu');
   }
 
   static Future<http.Response> getRestaurantByOwner(int ownerId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/restaurants/owner/$ownerId'),
-      headers: await _headers(),
-    );
+    return _get('/restaurants/owner/$ownerId');
   }
 
   static Future<http.Response> getRestaurantById(int restaurantId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/restaurants/$restaurantId'),
-      headers: await _headers(),
-    );
+    return _get('/restaurants/$restaurantId');
   }
 
   static Future<http.Response> getRestaurantCategories(int restaurantId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/restaurants/$restaurantId/categories'),
-      headers: await _headers(),
-    );
+    return _get('/restaurants/$restaurantId/categories');
   }
 
   static Future<http.Response> getRestaurantReviews(int restaurantId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/restaurants/$restaurantId/reviews'),
-      headers: await _headers(),
-    );
+    return _get('/restaurants/$restaurantId/reviews');
   }
 
   static Future<http.Response> addMenuItem(
     int restaurantId,
     Map<String, dynamic> data,
   ) async {
-    return await _client.post(
-      Uri.parse('$baseUrl/restaurants/$restaurantId/menu'),
-      headers: await _headers(),
-      body: jsonEncode(data),
+    return _postJson(
+      '/restaurants/$restaurantId/menu',
+      body: data,
+      authenticated: true,
     );
   }
 
@@ -108,59 +127,39 @@ class ApiService {
     int itemId,
     Map<String, dynamic> data,
   ) async {
-    return await _client.put(
-      Uri.parse('$baseUrl/restaurants/$restaurantId/menu/$itemId'),
-      headers: await _headers(),
-      body: jsonEncode(data),
-    );
+    return _putJson('/restaurants/$restaurantId/menu/$itemId', body: data);
   }
 
   static Future<http.Response> deleteMenuItem(
       int restaurantId, int itemId) async {
-    return await _client.delete(
-      Uri.parse('$baseUrl/restaurants/$restaurantId/menu/$itemId'),
-      headers: await _headers(),
-    );
+    return _delete('/restaurants/$restaurantId/menu/$itemId');
   }
 
   static Future<http.Response> submitRestaurantReview(
     int restaurantId,
     Map<String, dynamic> data,
   ) async {
-    return await _client.post(
-      Uri.parse('$baseUrl/restaurants/$restaurantId/reviews'),
-      headers: await _headers(),
-      body: jsonEncode(data),
+    return _postJson(
+      '/restaurants/$restaurantId/reviews',
+      body: data,
+      authenticated: true,
     );
   }
 
   static Future<http.Response> createOrder(Map<String, dynamic> data) async {
-    return await _client.post(
-      Uri.parse('$baseUrl/orders'),
-      headers: await _headers(),
-      body: jsonEncode(data),
-    );
+    return _postJson('/orders', body: data, authenticated: true);
   }
 
   static Future<http.Response> getCustomerOrders(int customerId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/orders/customer/$customerId'),
-      headers: await _headers(),
-    );
+    return _get('/orders/customer/$customerId');
   }
 
   static Future<http.Response> getRestaurantOrders(int restaurantId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/orders/restaurant/$restaurantId'),
-      headers: await _headers(),
-    );
+    return _get('/orders/restaurant/$restaurantId');
   }
 
   static Future<http.Response> getOrderById(int orderId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/orders/$orderId'),
-      headers: await _headers(),
-    );
+    return _get('/orders/$orderId');
   }
 
   static Future<http.Response> updateOrderStatus(
@@ -169,29 +168,22 @@ class ApiService {
     int? updatedBy,
     String? notes,
   }) async {
-    return await _client.put(
-      Uri.parse('$baseUrl/orders/$orderId/status'),
-      headers: await _headers(),
-      body: jsonEncode({
+    return _putJson(
+      '/orders/$orderId/status',
+      body: {
         'newStatus': newStatus,
         if (updatedBy != null) 'updatedBy': updatedBy,
         if (notes != null && notes.isNotEmpty) 'notes': notes,
-      }),
+      },
     );
   }
 
   static Future<http.Response> getAvailableOrders() async {
-    return await _client.get(
-      Uri.parse('$baseUrl/orders/rider/available'),
-      headers: await _headers(),
-    );
+    return _get('/orders/rider/available');
   }
 
   static Future<http.Response> getRiderOrders(int riderId) async {
-    return await _client.get(
-      Uri.parse('$baseUrl/orders/rider/$riderId'),
-      headers: await _headers(),
-    );
+    return _get('/orders/rider/$riderId');
   }
 
   static Future<http.Response> acceptOrder(int riderId, int orderId) async {
@@ -203,48 +195,31 @@ class ApiService {
   }
 
   static Future<http.Response> cancelOrder(int orderId) async {
-    return await _client.delete(
-      Uri.parse('$baseUrl/orders/$orderId'),
-      headers: await _headers(),
-    );
+    return _delete('/orders/$orderId');
   }
 
   static Future<http.Response> processPayment(Map<String, dynamic> data) async {
-    return await _client.post(
-      Uri.parse('$baseUrl/payments/process'),
-      headers: await _headers(),
-      body: jsonEncode(data),
-    );
+    return _postJson('/payments/process', body: data, authenticated: true);
   }
 
   static Future<http.Response> getAllUsers() async {
-    return await _client.get(
-      Uri.parse('$baseUrl/admin/users'),
-      headers: await _headers(),
-    );
+    return _get('/admin/users');
   }
 
   static Future<http.Response> updateUserStatus(
       int userId, bool isActive) async {
-    return await _client.put(
-      Uri.parse('$baseUrl/admin/users/$userId/status'),
-      headers: await _headers(),
-      body: jsonEncode({'isActive': isActive}),
+    return _putJson(
+      '/admin/users/$userId/status',
+      body: {'isActive': isActive},
     );
   }
 
   static Future<http.Response> getAdminOrderStats() async {
-    return await _client.get(
-      Uri.parse('$baseUrl/orders/admin/stats'),
-      headers: await _headers(),
-    );
+    return _get('/orders/admin/stats');
   }
 
   static Future<http.Response> getAdminRestaurantStats() async {
-    return await _client.get(
-      Uri.parse('$baseUrl/restaurants/stats'),
-      headers: await _headers(),
-    );
+    return _get('/restaurants/stats');
   }
 
   static Future<dynamic> _decode(http.Response response) async {

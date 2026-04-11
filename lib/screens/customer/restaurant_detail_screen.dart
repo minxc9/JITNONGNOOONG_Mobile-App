@@ -36,6 +36,16 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   int get _totalItems => _cart.values.fold(0, (a, b) => a + b);
 
+  void _updateQuantity(MenuItem item, int quantity) {
+    setState(() {
+      if (quantity <= 0) {
+        _cart.remove(item.id);
+      } else {
+        _cart[item.id] = quantity;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,169 +57,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           ? const Center(child: CircularProgressIndicator(color: Colors.orange))
           : CustomScrollView(
               slivers: [
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 220,
-                    child: _imageBox(
-                      imageUrl: widget.restaurant.imageUrl,
-                      fallbackIcon: Icons.restaurant_menu,
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    color: Colors.orange.withValues(alpha: 0.08),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.restaurant.cuisineType?.isNotEmpty == true)
-                          Text(widget.restaurant.cuisineType!,
-                              style: TextStyle(color: Colors.grey[700])),
-                        if (widget.restaurant.description?.isNotEmpty ==
-                            true) ...[
-                          const SizedBox(height: 8),
-                          Text(widget.restaurant.description!),
-                        ],
-                        if (widget.restaurant.deliveryFee != null ||
-                            widget.restaurant.estimatedDeliveryTime !=
-                                null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            [
-                              if (widget.restaurant.deliveryFee != null)
-                                'Delivery ฿${widget.restaurant.deliveryFee!.toStringAsFixed(0)}',
-                              if (widget.restaurant.estimatedDeliveryTime !=
-                                  null)
-                                '${widget.restaurant.estimatedDeliveryTime} mins',
-                            ].join(' • '),
-                          ),
-                        ],
-                        const SizedBox(height: 14),
-                        const Text(
-                          'Menu',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (_menuItems.isEmpty)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(child: Text('No menu items available')),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    sliver: SliverList.builder(
-                      itemCount: _menuItems.length,
-                      itemBuilder: (_, i) {
-                        final item = _menuItems[i];
-                        final qty = _cart[item.id] ?? 0;
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          child: Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(14),
-                                  child: SizedBox(
-                                    width: 92,
-                                    height: 92,
-                                    child: _imageBox(
-                                      imageUrl: item.imageUrl,
-                                      fallbackIcon: Icons.fastfood,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        [
-                                          if (item.category?.isNotEmpty == true)
-                                            item.category!,
-                                          '฿${item.price.toStringAsFixed(0)}',
-                                        ].join(' • '),
-                                      ),
-                                      if (item.description?.isNotEmpty ==
-                                          true) ...[
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          item.description!,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                      ],
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.remove_circle_outline,
-                                            ),
-                                            onPressed: qty > 0
-                                                ? () => setState(() {
-                                                      if (qty == 1) {
-                                                        _cart.remove(item.id);
-                                                      } else {
-                                                        _cart[item.id] =
-                                                            qty - 1;
-                                                      }
-                                                    })
-                                                : null,
-                                          ),
-                                          Text(
-                                            '$qty',
-                                            style:
-                                                const TextStyle(fontSize: 16),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.add_circle_outline,
-                                              color: Colors.orange,
-                                            ),
-                                            onPressed: () => setState(
-                                              () => _cart[item.id] = qty + 1,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                SliverToBoxAdapter(child: _buildHeroImage()),
+                SliverToBoxAdapter(child: _buildRestaurantSummary()),
+                _menuItems.isEmpty ? _buildEmptyMenuState() : _buildMenuList(),
               ],
             ),
       floatingActionButton: _totalItems > 0
@@ -226,6 +76,160 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                           menuItems: _menuItems))))
           : null,
     );
+  }
+
+  Widget _buildHeroImage() {
+    return SizedBox(
+      width: double.infinity,
+      height: 220,
+      child: _imageBox(
+        imageUrl: widget.restaurant.imageUrl,
+        fallbackIcon: Icons.restaurant_menu,
+      ),
+    );
+  }
+
+  Widget _buildRestaurantSummary() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: Colors.orange.withValues(alpha: 0.08),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.restaurant.cuisineType?.isNotEmpty == true)
+            Text(
+              widget.restaurant.cuisineType!,
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+          if (widget.restaurant.description?.isNotEmpty == true) ...[
+            const SizedBox(height: 8),
+            Text(widget.restaurant.description!),
+          ],
+          if (_restaurantMetaText.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(_restaurantMetaText),
+          ],
+          const SizedBox(height: 14),
+          const Text(
+            'Menu',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String get _restaurantMetaText {
+    final details = <String>[
+      if (widget.restaurant.deliveryFee != null)
+        'Delivery ฿${widget.restaurant.deliveryFee!.toStringAsFixed(0)}',
+      if (widget.restaurant.estimatedDeliveryTime != null)
+        '${widget.restaurant.estimatedDeliveryTime} mins',
+    ];
+    return details.join(' • ');
+  }
+
+  Widget _buildEmptyMenuState() {
+    return const SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(child: Text('No menu items available')),
+    );
+  }
+
+  Widget _buildMenuList() {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      sliver: SliverList.builder(
+        itemCount: _menuItems.length,
+        itemBuilder: (_, index) => _buildMenuItemCard(_menuItems[index]),
+      ),
+    );
+  }
+
+  Widget _buildMenuItemCard(MenuItem item) {
+    final quantity = _cart[item.id] ?? 0;
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: SizedBox(
+                width: 92,
+                height: 92,
+                child: _imageBox(
+                  imageUrl: item.imageUrl,
+                  fallbackIcon: Icons.fastfood,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(_menuItemSummary(item)),
+                  if (item.description?.isNotEmpty == true) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      item.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle_outline),
+                        onPressed: quantity > 0
+                            ? () => _updateQuantity(item, quantity - 1)
+                            : null,
+                      ),
+                      Text(
+                        '$quantity',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.add_circle_outline,
+                          color: Colors.orange,
+                        ),
+                        onPressed: () => _updateQuantity(item, quantity + 1),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _menuItemSummary(MenuItem item) {
+    final details = <String>[
+      if (item.category?.isNotEmpty == true) item.category!,
+      '฿${item.price.toStringAsFixed(0)}',
+    ];
+    return details.join(' • ');
   }
 
   Widget _imageBox({
