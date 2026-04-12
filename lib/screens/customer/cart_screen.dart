@@ -189,6 +189,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 18),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -223,6 +224,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 18),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -267,6 +269,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 18),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),

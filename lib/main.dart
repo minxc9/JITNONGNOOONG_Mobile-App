@@ -10,11 +10,13 @@ void main() {
   runApp(const MharApp());
 }
 
-const _brandOrange = Color(0xFFFF8A1D);
-const _brandOrangeDeep = Color(0xFFF26A21);
-const _brandOrangeSoft = Color(0xFFFFF1E3);
-const _brandCream = Color(0xFFFFFAF5);
-const _brandText = Color(0xFF2F241B);
+const _brandOrange = Color(0xFFE06A3A);
+const _brandOrangeDeep = Color(0xFFBF552A);
+const _brandOrangeSoft = Color(0xFFF8E5DB);
+const _brandCream = Color(0xFFFFFFFF);
+const _brandText = Color(0xFF2C2A33);
+const _brandMuted = Color(0xFF6E7383);
+const _brandSurface = Color(0xFFFFFFFF);
 
 class MharApp extends StatelessWidget {
   const MharApp({super.key});
@@ -24,7 +26,7 @@ class MharApp extends StatelessWidget {
       seedColor: _brandOrange,
       brightness: Brightness.light,
       primary: _brandOrange,
-      secondary: const Color(0xFFFFB347),
+      secondary: const Color(0xFFDA8B5F),
       surface: Colors.white,
     );
 
@@ -33,9 +35,9 @@ class MharApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: colorScheme,
-        scaffoldBackgroundColor: _brandCream,
+        scaffoldBackgroundColor: Colors.white,
         cardColor: Colors.white,
-        dividerColor: const Color(0xFFF0DDC9),
+        dividerColor: const Color(0xFFE7D9CC),
         appBarTheme: const AppBarTheme(
           backgroundColor: _brandOrange,
           foregroundColor: Colors.white,
@@ -53,7 +55,7 @@ class MharApp extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(color: Color(0xFFF3E3D4)),
+            side: const BorderSide(color: Color(0xFFEDE1D6)),
           ),
           margin: EdgeInsets.zero,
         ),
@@ -76,7 +78,7 @@ class MharApp extends StatelessWidget {
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             foregroundColor: _brandOrangeDeep,
-            side: const BorderSide(color: Color(0xFFFFC28F)),
+            side: const BorderSide(color: Color(0xFFE3B08D)),
             minimumSize: const Size.fromHeight(50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
@@ -96,15 +98,15 @@ class MharApp extends StatelessWidget {
             horizontal: 18,
             vertical: 16,
           ),
-          hintStyle: TextStyle(color: Colors.brown.shade300),
-          labelStyle: TextStyle(color: Colors.brown.shade500),
+          hintStyle: const TextStyle(color: _brandMuted),
+          labelStyle: const TextStyle(color: _brandMuted),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: Color(0xFFF0DDC9)),
+            borderSide: const BorderSide(color: Color(0xFFE7D9CC)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: Color(0xFFF0DDC9)),
+            borderSide: const BorderSide(color: Color(0xFFE7D9CC)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
@@ -112,8 +114,8 @@ class MharApp extends StatelessWidget {
           ),
         ),
         chipTheme: ChipThemeData(
-          backgroundColor: _brandOrangeSoft,
-          selectedColor: const Color(0xFFFFD0A7),
+          backgroundColor: const Color(0xFFF5EEE8),
+          selectedColor: const Color(0xFFF0D5C6),
           labelStyle: const TextStyle(
             color: _brandText,
             fontWeight: FontWeight.w600,
@@ -129,9 +131,16 @@ class MharApp extends StatelessWidget {
           indicator: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x12000000),
+                blurRadius: 8,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           labelColor: _brandOrangeDeep,
-          unselectedLabelColor: Colors.white,
+          unselectedLabelColor: const Color(0xFFFBE6DA),
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 15,
@@ -148,7 +157,7 @@ class MharApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
         snackBarTheme: SnackBarThemeData(
-          backgroundColor: _brandText,
+          backgroundColor: const Color(0xFF312A25),
           contentTextStyle: const TextStyle(color: Colors.white),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -159,6 +168,9 @@ class MharApp extends StatelessWidget {
               bodyColor: _brandText,
               displayColor: _brandText,
             ),
+        listTileTheme: const ListTileThemeData(
+          tileColor: Colors.white,
+        ),
       ),
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
@@ -213,7 +225,7 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [_brandCream, _brandOrangeSoft],
+            colors: [_brandCream, _brandSurface],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
