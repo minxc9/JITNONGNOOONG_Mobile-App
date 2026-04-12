@@ -121,6 +121,12 @@ void main() {
             200,
           );
         }
+        if (request.url.path.endsWith('/restaurants/1/reviews')) {
+          return http.Response(
+            '{"success":true,"data":[]}',
+            200,
+          );
+        }
         return http.Response('{"success":false}', 404);
       }),
     );
