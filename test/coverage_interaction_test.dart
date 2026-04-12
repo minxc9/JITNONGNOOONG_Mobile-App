@@ -13,11 +13,59 @@ import 'package:mhar_rueng_sang/screens/auth/otp_screen.dart';
 import 'package:mhar_rueng_sang/screens/auth/register_screen.dart';
 import 'package:mhar_rueng_sang/screens/customer/cart_screen.dart';
 import 'package:mhar_rueng_sang/screens/customer/home_screen.dart';
+import 'package:mhar_rueng_sang/screens/customer/order_history_screen.dart';
+import 'package:mhar_rueng_sang/screens/customer/order_tracking_screen.dart';
 import 'package:mhar_rueng_sang/screens/customer/restaurant_detail_screen.dart';
+import 'package:mhar_rueng_sang/screens/rider/dashboard_screen.dart';
+import 'package:mhar_rueng_sang/screens/rider/delivery_screen.dart';
 import 'package:mhar_rueng_sang/screens/restaurant/dashboard_screen.dart';
 import 'package:mhar_rueng_sang/services/api_service.dart';
 import 'package:mhar_rueng_sang/services/local_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+Map<String, dynamic> _testOrderPayload({
+  required String status,
+  int id = 1,
+  int restaurantId = 1,
+  String restaurantName = 'Bangkok Street Food',
+  int? restaurantReviewId,
+  int? restaurantRating,
+  String? restaurantReviewText,
+  String? specialInstructions,
+}) {
+  return {
+    'success': true,
+    'data': {
+      'id': id,
+      'orderNumber': 'MR$id',
+      'customerId': 5,
+      'customerName': 'Customer',
+      'customerPhoneNumber': '+66810000000',
+      'restaurantId': restaurantId,
+      'restaurantName': restaurantName,
+      'status': status,
+      'totalAmount': 240.0,
+      'deliveryFee': 35.0,
+      'deliveryAddress': '123456',
+      'deliveryLatitude': 13.75,
+      'deliveryLongitude': 100.5,
+      'restaurantReviewId': restaurantReviewId,
+      'restaurantRating': restaurantRating,
+      'restaurantReviewText': restaurantReviewText,
+      'specialInstructions': specialInstructions,
+      'orderItems': [
+        {
+          'id': 1,
+          'menuItemName': 'Pad Thai',
+          'quantity': 2,
+          'unitPrice': 120.0,
+          'totalPrice': 240.0,
+        },
+      ],
+      'createdAt': '2026-04-10T15:06:09.000Z',
+    },
+  };
+}
 
 void main() {
   setUp(() {
@@ -1049,4 +1097,772 @@ void main() {
       expect(find.text('Open Cart'), findsOneWidget);
     },
   );
+
+  testWidgets(
+      'RiderDashboardScreen covers tabs, delivery navigation, and logout',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'user_id': 6,
+      'user_role': 'RIDER',
+    });
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/orders/rider/available')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'content': [
+                  {
+                    'id': 11,
+                    'orderNumber': 'ORD-11',
+                    'customerId': 5,
+                    'restaurantId': 1,
+                    'restaurantName': 'Bangkok Street Food',
+                    'status': 'READY_FOR_PICKUP',
+                    'totalAmount': 120.0,
+                    'deliveryFee': 20.0,
+                    'deliveryAddress': '123 Street',
+                    'orderItems': [],
+                  },
+                ],
+              },
+            }),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/rider/6')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'content': [
+                  {
+                    'id': 21,
+                    'orderNumber': 'ORD-21',
+                    'customerId': 5,
+                    'restaurantId': 1,
+                    'restaurantName': 'Bangkok Street Food',
+                    'status': 'PICKED_UP',
+                    'totalAmount': 240.0,
+                    'deliveryFee': 35.0,
+                    'deliveryAddress': 'Customer House',
+                    'orderItems': [],
+                  },
+                ],
+              },
+            }),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/21')) {
+          return http.Response(
+            jsonEncode(_testOrderPayload(status: 'PICKED_UP', id: 21)),
+            200,
+          );
+        }
+        if (path.endsWith('/restaurants/1')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'id': 1,
+                'name': 'Bangkok Street Food',
+                'address': '123 Sukhumvit',
+                'phone_number': '+66812345678',
+                'is_active': true,
+              },
+            }),
+            200,
+          );
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: RiderDashboardScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Accept'), findsOneWidget);
+    await tester.tap(find.text('My Deliveries'));
+    await tester.pumpAndSettle();
+    expect(find.text('View Delivery'), findsOneWidget);
+
+    await tester.tap(find.text('View Delivery'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delivery Details'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.logout));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in to your account'), findsOneWidget);
+  });
+
+  testWidgets('RiderDashboardScreen covers empty, error, and accept flows',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'user_id': 6,
+      'user_role': 'RIDER',
+    });
+
+    var availableFail = false;
+    var accepted = false;
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/orders/rider/available')) {
+          if (availableFail) {
+            throw Exception('available failed');
+          }
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'content': accepted
+                    ? []
+                    : [
+                        {
+                          'id': 33,
+                          'orderNumber': 'ORD-33',
+                          'customerId': 5,
+                          'restaurantId': 1,
+                          'restaurantName': 'Bangkok Street Food',
+                          'status': 'READY_FOR_PICKUP',
+                          'totalAmount': 180.0,
+                          'deliveryFee': 20.0,
+                          'deliveryAddress': '123 Street',
+                          'orderItems': [],
+                        },
+                      ],
+              },
+            }),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/rider/6')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'content': accepted
+                    ? [
+                        {
+                          'id': 33,
+                          'orderNumber': 'ORD-33',
+                          'customerId': 5,
+                          'restaurantId': 1,
+                          'restaurantName': 'Bangkok Street Food',
+                          'status': 'PICKED_UP',
+                          'totalAmount': 180.0,
+                          'deliveryFee': 20.0,
+                          'deliveryAddress': 'Customer House',
+                          'orderItems': [],
+                        },
+                      ]
+                    : [],
+              },
+            }),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/33/status') && request.method == 'PUT') {
+          accepted = true;
+          return http.Response('{"success":true}', 200);
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: RiderDashboardScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Accept'), findsOneWidget);
+    await tester.tap(find.text('Accept'));
+    await tester.pumpAndSettle();
+    expect(find.text('Order accepted.'), findsOneWidget);
+
+    await tester.tap(find.text('My Deliveries'));
+    await tester.pumpAndSettle();
+    expect(find.text('View Delivery'), findsOneWidget);
+
+    await tester.tap(find.text('Available'));
+    await tester.pumpAndSettle();
+    expect(find.text('No orders waiting for pickup'), findsOneWidget);
+
+    availableFail = true;
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: RiderDashboardScreen(
+          key: ValueKey('rider-load-fail'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('No orders waiting for pickup'), findsOneWidget);
+  });
+
+  testWidgets('DeliveryScreen covers contact dialog and delivery confirmation',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 6});
+    var delivered = false;
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/orders/50') && request.method == 'GET') {
+          return http.Response(
+            jsonEncode(
+              _testOrderPayload(
+                status: delivered ? 'DELIVERED' : 'PICKED_UP',
+                id: 50,
+              ),
+            ),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/50/status') && request.method == 'PUT') {
+          delivered = true;
+          return http.Response('{"success":true}', 200);
+        }
+        if (path.endsWith('/restaurants/1')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'id': 1,
+                'name': 'Bangkok Street Food',
+                'address': '123 Sukhumvit',
+                'phone_number': '+66812345678',
+                'is_active': true,
+              },
+            }),
+            200,
+          );
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester
+        .pumpWidget(const MaterialApp(home: DeliveryScreen(orderId: 50)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Customer Contact'));
+    await tester.pumpAndSettle();
+    expect(find.text('Customer Contact'), findsNWidgets(2));
+    expect(find.text('+66810000000'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Confirm Delivery'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Confirm Delivery'));
+    await tester.pumpAndSettle();
+    expect(find.text('Already Delivered'), findsOneWidget);
+  });
+
+  testWidgets('DeliveryScreen covers load failure and missing map data',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 6});
+
+    var shouldFail = false;
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/orders/51') && request.method == 'GET') {
+          if (shouldFail) {
+            throw Exception('load failed');
+          }
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'id': 51,
+                'orderNumber': 'MR51',
+                'customerId': 5,
+                'customerName': 'Customer',
+                'restaurantId': 1,
+                'restaurantName': 'Bangkok Street Food',
+                'status': 'PICKED_UP',
+                'totalAmount': 120.0,
+                'deliveryFee': 35.0,
+                'deliveryAddress': '',
+                'orderItems': [
+                  {
+                    'id': 1,
+                    'menuItemName': 'Pad Thai',
+                    'quantity': 1,
+                    'unitPrice': 120.0,
+                    'totalPrice': 120.0,
+                  },
+                ],
+              },
+            }),
+            200,
+          );
+        }
+        if (path.endsWith('/restaurants/1')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'id': 1,
+                'name': 'Bangkok Street Food',
+                'is_active': true,
+              },
+            }),
+            200,
+          );
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester
+        .pumpWidget(const MaterialApp(home: DeliveryScreen(orderId: 51)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open Restaurant Map'));
+    await tester.pumpAndSettle();
+    expect(find.text('No map location available for restaurant.'),
+        findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Open Customer Map'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Open Customer Map'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('No map location available for customer.'),
+      findsOneWidget,
+    );
+
+    shouldFail = true;
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: DeliveryScreen(
+          key: ValueKey('missing-order'),
+          orderId: 51,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Order not found'), findsOneWidget);
+  });
+
+  testWidgets(
+      'CartScreen covers payment switching, validation, and order success',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 5});
+    var paymentCalled = false;
+    var orderCalled = false;
+
+    final restaurant =
+        Restaurant(id: 1, name: 'Bangkok Street Food', isActive: true);
+    final menuItems = [
+      MenuItem(
+        id: 10,
+        name: 'Pad Thai',
+        price: 120,
+        category: 'Noodles',
+        isAvailable: true,
+      ),
+    ];
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        if (request.url.path.endsWith('/payments/process')) {
+          paymentCalled = true;
+          return http.Response('{"success":true}', 200);
+        }
+        if (request.url.path.endsWith('/orders') && request.method == 'POST') {
+          orderCalled = true;
+          return http.Response('{"success":true}', 200);
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Navigator(
+          onGenerateRoute: (_) => MaterialPageRoute(
+            builder: (_) => CartScreen(
+              restaurant: restaurant,
+              cart: const {10: 3},
+              menuItems: menuItems,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Delivery Fee (Free)'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Delivery Fee (Free)'), findsOneWidget);
+    await tester.tap(find.text('QR / PromptPay'));
+    await tester.pumpAndSettle();
+    expect(find.text('Scan a QR code to pay'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Place Order'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Place Order'));
+    await tester.pumpAndSettle();
+    expect(find.text('Please enter a delivery address.'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, '123 Main Street');
+    await tester.tap(find.text('Place Order'));
+    await tester.pumpAndSettle();
+
+    expect(paymentCalled, isTrue);
+    expect(orderCalled, isTrue);
+  });
+
+  testWidgets('CartScreen covers paid delivery summary branch',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 5});
+
+    final restaurant =
+        Restaurant(id: 1, name: 'Bangkok Street Food', isActive: true);
+    final menuItems = [
+      MenuItem(
+        id: 10,
+        name: 'Pad Thai',
+        price: 120,
+        category: 'Noodles',
+        isAvailable: true,
+      ),
+    ];
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CartScreen(
+          restaurant: restaurant,
+          cart: const {10: 1},
+          menuItems: menuItems,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Delivery Fee'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Delivery Fee'), findsOneWidget);
+    expect(find.text('Delivery Fee (Free)'), findsNothing);
+    expect(find.text('Use your saved card'), findsOneWidget);
+    expect(find.text('฿35.00'), findsOneWidget);
+  });
+
+  testWidgets('OrderHistoryScreen covers detail navigation and load failure',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 5});
+    var fail = false;
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/orders/customer/5')) {
+          if (fail) {
+            throw Exception('failed');
+          }
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'content': [
+                  {
+                    'id': 90,
+                    'orderNumber': 'ORD-090',
+                    'customerId': 5,
+                    'restaurantId': 1,
+                    'restaurantName': 'Bangkok Street Food',
+                    'status': 'DELIVERED',
+                    'totalAmount': 240.0,
+                    'deliveryFee': 35.0,
+                    'orderItems': [],
+                  },
+                ],
+              },
+            }),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/90')) {
+          return http.Response(
+            jsonEncode(_testOrderPayload(status: 'DELIVERED', id: 90)),
+            200,
+          );
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: OrderHistoryScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('View Order Details'));
+    await tester.pumpAndSettle();
+    expect(find.text('Order Tracking'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    fail = true;
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Unable to load your orders right now.'), findsOneWidget);
+  });
+
+  testWidgets('OrderHistoryScreen covers empty state and cancelled orders',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 5});
+
+    var showCancelled = false;
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/orders/customer/5')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'content': showCancelled
+                    ? [
+                        {
+                          'id': 91,
+                          'orderNumber': 'ORD-091',
+                          'customerId': 5,
+                          'restaurantId': 1,
+                          'restaurantName': 'Bangkok Street Food',
+                          'status': 'CANCELLED',
+                          'totalAmount': 100.0,
+                          'deliveryFee': 35.0,
+                          'createdAt': '2026-04-11',
+                          'orderItems': [],
+                        },
+                      ]
+                    : [],
+              },
+            }),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/91')) {
+          return http.Response(
+            jsonEncode(_testOrderPayload(status: 'CANCELLED', id: 91)),
+            200,
+          );
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: OrderHistoryScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No orders yet'), findsOneWidget);
+
+    showCancelled = true;
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CANCELLED'), findsOneWidget);
+    expect(find.text('2026-04-11'), findsOneWidget);
+    await tester.tap(find.text('ORD-091'));
+    await tester.pumpAndSettle();
+    expect(find.text('This order was cancelled.'), findsOneWidget);
+  });
+
+  testWidgets('OrderTrackingScreen covers cancel and review submission flows',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 5});
+
+    var cancelStatus = 'PENDING';
+    var reviewSaved = false;
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/orders/77') && request.method == 'GET') {
+          return http.Response(
+            jsonEncode(_testOrderPayload(status: cancelStatus, id: 77)),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/77') && request.method == 'DELETE') {
+          cancelStatus = 'CANCELLED';
+          return http.Response('{"success":true}', 200);
+        }
+        if (path.endsWith('/orders/88') && request.method == 'GET') {
+          return http.Response(
+            jsonEncode(
+              _testOrderPayload(
+                status: 'DELIVERED',
+                id: 88,
+                restaurantReviewId: reviewSaved ? 91 : null,
+                restaurantRating: reviewSaved ? 5 : null,
+                restaurantReviewText: reviewSaved ? 'Amazing food' : null,
+              ),
+            ),
+            200,
+          );
+        }
+        if (path.endsWith('/restaurants/1/reviews') &&
+            request.method == 'POST') {
+          reviewSaved = true;
+          return http.Response('{"success":true}', 200);
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester
+        .pumpWidget(const MaterialApp(home: OrderTrackingScreen(orderId: 77)));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Cancel Order'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Cancel Order'));
+    await tester.pumpAndSettle();
+    expect(find.text('This order was cancelled.'), findsOneWidget);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: OrderTrackingScreen(
+          key: ValueKey('review-order'),
+          orderId: 88,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final rateButton = find.widgetWithText(ElevatedButton, 'Rate Restaurant');
+    await tester.scrollUntilVisible(
+      rateButton,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(rateButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Rate Restaurant'), findsNWidgets(2));
+    await tester.enterText(find.byType(TextField).last, 'Amazing food');
+    await tester.tap(find.text('Submit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Restaurant rating: 5/5'), findsOneWidget);
+    expect(find.text('Amazing food'), findsOneWidget);
+  });
+
+  testWidgets(
+      'OrderTrackingScreen covers picked up tracking, refresh, and dialog cancel',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'user_id': 5});
+
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        final path = request.url.path;
+        if (path.endsWith('/orders/99') && request.method == 'GET') {
+          return http.Response(
+            jsonEncode(
+              _testOrderPayload(
+                status: 'PICKED_UP',
+                id: 99,
+                specialInstructions: 'Leave at the lobby.',
+              ),
+            ),
+            200,
+          );
+        }
+        if (path.endsWith('/orders/88') && request.method == 'GET') {
+          return http.Response(
+            jsonEncode(_testOrderPayload(status: 'DELIVERED', id: 88)),
+            200,
+          );
+        }
+        if (path.endsWith('/restaurants/1/reviews') &&
+            request.method == 'POST') {
+          return http.Response('{"success":true}', 200);
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(home: OrderTrackingScreen(orderId: 99)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Leave at the lobby.'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Live Tracking Map'), findsOneWidget);
+    expect(find.text('Pickup completed'), findsOneWidget);
+    expect(find.text('Leave at the lobby.'), findsOneWidget);
+    expect(find.text('RESTAURANT GPS'), findsOneWidget);
+    expect(find.text('RIDER GPS'), findsOneWidget);
+    expect(find.text('DESTINATION GPS'), findsOneWidget);
+
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text('Pickup completed'), findsOneWidget);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: OrderTrackingScreen(
+          key: ValueKey('review-cancel'),
+          orderId: 88,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Rate Restaurant'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Rate Restaurant'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Restaurant rating: 5/5'), findsNothing);
+    expect(find.text('Amazing food'), findsNothing);
+  });
 }
