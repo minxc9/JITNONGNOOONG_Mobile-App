@@ -211,6 +211,7 @@ void main() {
                     'customer_name': 'Mint',
                     'rating': 5,
                     'review_text': 'Great',
+                    'created_at': '2026-04-11',
                   },
                 ],
               }),
@@ -244,7 +245,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pending Orders'), findsOneWidget);
-      expect(find.text('Recent Reviews'), findsOneWidget);
+      expect(find.text('Customer Rating'), findsOneWidget);
+      expect(find.text('5.0'), findsNWidgets(2));
+      expect(find.text('1 customer review'), findsOneWidget);
+      expect(find.text('Recent customer comments'), findsOneWidget);
+      expect(find.text('Mint'), findsOneWidget);
+      expect(find.text('Great'), findsOneWidget);
 
       await tester.tap(find.text('Orders'));
       await tester.pumpAndSettle();

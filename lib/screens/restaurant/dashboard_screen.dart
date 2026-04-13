@@ -465,6 +465,12 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
   bool get _canManageMenu =>
       _categories.where((category) => !category.isLocalOnly).isNotEmpty;
 
+  double get _averageReviewRating {
+    if (_reviews.isEmpty) return 0;
+    final total = _reviews.fold<int>(0, (sum, review) => sum + review.rating);
+    return total / _reviews.length;
+  }
+
   Widget _buildOverviewTab() {
     return RefreshIndicator(
       onRefresh: _loadData,
@@ -491,13 +497,17 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
             '${_reviews.length}',
             Icons.star_border_outlined,
           ),
-          if (_reviews.isNotEmpty) _buildRecentReviewsCard(),
+          if (_reviews.isNotEmpty) _buildReviewSummaryCard(),
         ],
       ),
     );
   }
 
-  Widget _buildRecentReviewsCard() {
+  Widget _buildReviewSummaryCard() {
+    final reviewCount = _reviews.length;
+    final countLabel =
+        reviewCount == 1 ? '1 customer review' : '$reviewCount customer reviews';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -505,18 +515,124 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Recent Reviews',
+              'Customer Rating',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.star_rounded,
+                    color: Colors.orange,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _averageReviewRating.toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      countLabel,
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Divider(color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            const Text(
+              'Recent customer comments',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 12),
             ..._reviews.take(3).map(
                   (review) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(
-                      '${review.customerName}: ${review.rating}/5 ${review.reviewText ?? ''}',
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  review.customerName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (review.createdAt != null &&
+                                    review.createdAt!.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    review.createdAt!,
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  review.reviewText?.trim().isNotEmpty == true
+                                      ? review.reviewText!
+                                      : 'Customer left a rating without a written comment.',
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                color: Colors.orange,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                review.rating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
