@@ -235,83 +235,89 @@ class _DeliveryScreenState extends State<DeliveryScreen> {
   Widget build(BuildContext context) {
     final order = _order;
     final restaurant = _restaurant;
+    final Widget body;
+
+    if (_loading) {
+      body = const AppLoadingView();
+    } else if (order == null) {
+      body = const Center(child: Text('Order not found'));
+    } else {
+      body = ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+        children: [
+          _buildHeaderCard(order),
+          const SizedBox(height: 16),
+          _buildDetailCard(
+            title: 'Pickup Details',
+            details: [
+              Text(restaurant?.name ?? order.restaurantName ?? ''),
+              if (restaurant?.address?.isNotEmpty == true) ...[
+                const SizedBox(height: 6),
+                Text(restaurant!.address!),
+              ],
+              if (restaurant?.phoneNumber?.isNotEmpty == true) ...[
+                const SizedBox(height: 6),
+                Text('Restaurant phone: ${restaurant!.phoneNumber!}'),
+              ],
+            ],
+            actions: [
+              OutlinedButton.icon(
+                onPressed: () => _openMap(
+                  label: 'restaurant',
+                  latitude: restaurant?.latitude,
+                  longitude: restaurant?.longitude,
+                  query: restaurant?.address,
+                ),
+                icon: const Icon(Icons.map_outlined),
+                label: const Text('Open Restaurant Map'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildDetailCard(
+            title: 'Drop-off Address',
+            details: [
+              Text(order.deliveryAddress ?? 'No address'),
+              if (order.deliveryLatitude != null &&
+                  order.deliveryLongitude != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'GPS: ${order.deliveryLatitude}, ${order.deliveryLongitude}',
+                ),
+              ],
+            ],
+            actions: [
+              OutlinedButton.icon(
+                onPressed: () => _openMap(
+                  label: 'customer',
+                  latitude: order.deliveryLatitude,
+                  longitude: order.deliveryLongitude,
+                  query: order.deliveryAddress,
+                ),
+                icon: const Icon(Icons.place_outlined),
+                label: const Text('Open Customer Map'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _showCustomerContact,
+                icon: const Icon(Icons.contact_phone_outlined),
+                label: const Text('Customer Contact'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildItemsCard(order),
+          const SizedBox(height: 18),
+          _buildDeliveryButton(order),
+        ],
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delivery Details'),
         backgroundColor: Colors.orange,
       ),
-      body: _loading
-          ? const AppLoadingView()
-          : order == null
-              ? const Center(child: Text('Order not found'))
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                  children: [
-                    _buildHeaderCard(order),
-                    const SizedBox(height: 16),
-                    _buildDetailCard(
-                      title: 'Pickup Details',
-                      details: [
-                        Text(restaurant?.name ?? order.restaurantName ?? ''),
-                        if (restaurant?.address?.isNotEmpty == true) ...[
-                          const SizedBox(height: 6),
-                          Text(restaurant!.address!),
-                        ],
-                        if (restaurant?.phoneNumber?.isNotEmpty == true) ...[
-                          const SizedBox(height: 6),
-                          Text('Restaurant phone: ${restaurant!.phoneNumber!}'),
-                        ],
-                      ],
-                      actions: [
-                        OutlinedButton.icon(
-                          onPressed: () => _openMap(
-                            label: 'restaurant',
-                            latitude: restaurant?.latitude,
-                            longitude: restaurant?.longitude,
-                            query: restaurant?.address,
-                          ),
-                          icon: const Icon(Icons.map_outlined),
-                          label: const Text('Open Restaurant Map'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDetailCard(
-                      title: 'Drop-off Address',
-                      details: [
-                        Text(order.deliveryAddress ?? 'No address'),
-                        if (order.deliveryLatitude != null &&
-                            order.deliveryLongitude != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'GPS: ${order.deliveryLatitude}, ${order.deliveryLongitude}',
-                          ),
-                        ],
-                      ],
-                      actions: [
-                        OutlinedButton.icon(
-                          onPressed: () => _openMap(
-                            label: 'customer',
-                            latitude: order.deliveryLatitude,
-                            longitude: order.deliveryLongitude,
-                            query: order.deliveryAddress,
-                          ),
-                          icon: const Icon(Icons.place_outlined),
-                          label: const Text('Open Customer Map'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: _showCustomerContact,
-                          icon: const Icon(Icons.contact_phone_outlined),
-                          label: const Text('Customer Contact'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _buildItemsCard(order),
-                    const SizedBox(height: 18),
-                    _buildDeliveryButton(order),
-                  ],
-                ),
+      body: body,
     );
   }
 }

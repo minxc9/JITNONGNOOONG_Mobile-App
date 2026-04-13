@@ -102,6 +102,22 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final Widget body;
+
+    if (_isLoading) {
+      body = const AppLoadingView();
+    } else {
+      final Widget menuSection =
+          _menuItems.isEmpty ? _buildEmptyMenuState() : _buildMenuList();
+      body = CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _buildHeroImage()),
+          SliverToBoxAdapter(child: _buildRestaurantSummary()),
+          menuSection,
+          SliverToBoxAdapter(child: _buildReviewsSection()),
+        ],
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -145,16 +161,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const AppLoadingView()
-          : CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: _buildHeroImage()),
-                SliverToBoxAdapter(child: _buildRestaurantSummary()),
-                _menuItems.isEmpty ? _buildEmptyMenuState() : _buildMenuList(),
-                SliverToBoxAdapter(child: _buildReviewsSection()),
-              ],
-            ),
+      body: body,
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: ElevatedButton.icon(

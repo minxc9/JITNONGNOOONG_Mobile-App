@@ -679,17 +679,22 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   Widget build(BuildContext context) {
     final order = _order;
     final tracking = _trackingSnapshot;
+    final Widget body;
+
+    if (_isLoading) {
+      body = const AppLoadingView();
+    } else if (order == null) {
+      body = const Center(child: Text('Order not found'));
+    } else {
+      body = _buildLoadedBody(order, tracking);
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Order Tracking'),
         backgroundColor: Colors.orange,
       ),
-      body: _isLoading
-          ? const AppLoadingView()
-          : order == null
-              ? const Center(child: Text('Order not found'))
-              : _buildLoadedBody(order, tracking),
+      body: body,
     );
   }
 
