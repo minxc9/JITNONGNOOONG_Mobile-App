@@ -7,7 +7,8 @@ import '../models/user.dart';
 import '../utils/session_manager.dart';
 
 class ApiService {
-  static const String baseUrl = "http://127.0.0.1:8080/api/v1";
+  static const String baseUrl =
+      "https://two025-itcs383-jitnongnooong-2.onrender.com/api/v1";
   static const _contentTypeHeader = 'Content-Type';
   static const _jsonMimeType = 'application/json';
   static http.Client _client = http.Client();

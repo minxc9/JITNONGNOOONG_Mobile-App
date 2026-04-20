@@ -55,19 +55,20 @@ flutter pub get
 
 ## Backend Requirement
 
-The app uses this API base URL in [lib/services/api_service.dart](/Users/mn/Downloads/JITNONGNOOONG-Mobile-App-main-3/lib/services/api_service.dart):
+The app uses this deployed API base URL in [lib/services/api_service.dart](/Users/mn/Downloads/JITNONGNOOONG-Mobile-App-main-3/lib/services/api_service.dart):
 
 ```dart
-static const String baseUrl = "http://127.0.0.1:8080/api/v1";
+static const String baseUrl =
+    "https://two025-itcs383-jitnongnooong-2.onrender.com/api/v1";
 ```
 
-So the backend must be running locally at:
+So the app connects to the deployed Render backend:
 
 ```text
-http://127.0.0.1:8080
+https://two025-itcs383-jitnongnooong-2.onrender.com
 ```
 
-If you run the app on a real Android device, `127.0.0.1` points to the device itself, not your computer. In that case, change the base URL to your computer's local IP address, for example:
+If you want to connect to a local backend instead, change the base URL to your computer's local IP address. On a real Android device, `127.0.0.1` points to the device itself, not your computer.
 
 ```dart
 static const String baseUrl = "http://192.168.x.x:8080/api/v1";
