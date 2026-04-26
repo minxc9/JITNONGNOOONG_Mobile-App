@@ -15,6 +15,10 @@ class RiderDashboardScreen extends StatefulWidget {
 }
 
 class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
+  static const _statsBreakpointLarge = 900.0;
+  static const _statsBreakpointMedium = 600.0;
+  static const _statsSpacing = 16.0;
+
   List<Order> _availableOrders = [];
   List<Order> _myOrders = [];
   String _riderName = 'Rider';
@@ -29,10 +33,10 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   Future<void> _loadData() async {
     final riderId = await SessionManager.getUserId();
     final riderName = await SessionManager.getUserName();
+    final resolvedRiderName = _resolvedRiderName(riderName);
     if (riderId == null) {
       setState(() {
-        _riderName =
-            riderName?.trim().isNotEmpty == true ? riderName!.trim() : 'Rider';
+        _riderName = resolvedRiderName;
         _loading = false;
       });
       return;
@@ -45,15 +49,13 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
       setState(() {
         _availableOrders = available;
         _myOrders = mine;
-        _riderName =
-            riderName?.trim().isNotEmpty == true ? riderName!.trim() : 'Rider';
+        _riderName = resolvedRiderName;
         _loading = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _riderName =
-            riderName?.trim().isNotEmpty == true ? riderName!.trim() : 'Rider';
+        _riderName = resolvedRiderName;
         _loading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -155,6 +157,24 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
     return '#${order.id}';
   }
 
+  String _resolvedRiderName(String? riderName) {
+    final trimmedName = riderName?.trim();
+    if (trimmedName != null && trimmedName.isNotEmpty) {
+      return trimmedName;
+    }
+    return 'Rider';
+  }
+
+  int _statsColumnCount(double maxWidth) {
+    if (maxWidth >= _statsBreakpointLarge) {
+      return 3;
+    }
+    if (maxWidth >= _statsBreakpointMedium) {
+      return 2;
+    }
+    return 1;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,13 +244,12 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   Widget _buildStatsSection() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useThreeColumns = constraints.maxWidth >= 900;
-        final useTwoColumns = constraints.maxWidth >= 600;
-        final columns = useThreeColumns ? 3 : (useTwoColumns ? 2 : 1);
-        final width = (constraints.maxWidth - ((columns - 1) * 16)) / columns;
+        final columns = _statsColumnCount(constraints.maxWidth);
+        final width =
+            (constraints.maxWidth - ((columns - 1) * _statsSpacing)) / columns;
         return Wrap(
-          spacing: 16,
-          runSpacing: 16,
+          spacing: _statsSpacing,
+          runSpacing: _statsSpacing,
           children: [
             _statCard(
               title: "Today's Earnings",
@@ -260,143 +279,125 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   }
 
   Widget _buildActiveDeliveryCard(Order order) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFFF97316), width: 2),
-      ),
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return AppOutlinedCard(
+      borderRadius: 20,
+      borderColor: const Color(0xFFF97316),
+      borderWidth: 2,
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Active Delivery',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF97316),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'In Progress',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Order ${_orderNumberLabel(order)}',
+            style: TextStyle(
+              color: Colors.blueGrey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _restaurantLabel(order),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Customer',
+            style: TextStyle(
+              color: Colors.blueGrey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _customerLabel(order),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+            ),
+          ),
+          if (order.deliveryAddress?.trim().isNotEmpty == true) ...[
+            const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Expanded(
+                Icon(Icons.location_on_outlined,
+                    color: Colors.blueGrey[500], size: 18),
+                const SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    'Active Delivery',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF97316),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text(
-                    'In Progress',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
+                    order.deliveryAddress!,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            Text(
-              'Order ${_orderNumberLabel(order)}',
-              style: TextStyle(
-                color: Colors.blueGrey[500],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _restaurantLabel(order),
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Customer',
-              style: TextStyle(
-                color: Colors.blueGrey[500],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _customerLabel(order),
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-            if (order.deliveryAddress?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.location_on_outlined,
-                      color: Colors.blueGrey[500], size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      order.deliveryAddress!,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _openDelivery(order),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF07031A),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'View Delivery Details',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
           ],
-        ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: AppPrimaryActionButton(
+              label: 'View Delivery Details',
+              onPressed: () => _openDelivery(order),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAvailableOrdersCard() {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Available Orders Nearby',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
+    return AppOutlinedCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Available Orders Nearby',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 16),
-            if (_availableOrders.isEmpty)
-              _buildAvailableOrdersEmpty()
-            else
-              ..._availableOrders.map(_buildAvailableOrderItem),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          if (_availableOrders.isEmpty)
+            _buildAvailableOrdersEmpty()
+          else
+            ..._availableOrders.map(_buildAvailableOrderItem),
+        ],
       ),
     );
   }
@@ -512,20 +513,10 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: AppPrimaryActionButton(
+              label: 'Accept Order',
               onPressed: () => _acceptOrder(order),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF07031A),
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(46),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Accept Order',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
+              minHeight: 46,
             ),
           ),
         ],
@@ -542,46 +533,11 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   }) {
     return SizedBox(
       width: width,
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.blueGrey[700],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: accentColor, size: 26),
-              ),
-            ],
-          ),
-        ),
+      child: AppDashboardMetricCard(
+        title: title,
+        value: value,
+        icon: icon,
+        accentColor: accentColor,
       ),
     );
   }

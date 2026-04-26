@@ -635,6 +635,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildUserCard(User user) {
     final isRestaurant = user.role == 'RESTAURANT';
     final isActive = user.isActive ?? true;
+    final badgeLabel = _statusBadgeLabel(
+      isRestaurant: isRestaurant,
+      isActive: isActive,
+    );
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
@@ -678,9 +682,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          isActive
-                              ? (isRestaurant ? 'active' : 'Active')
-                              : (isRestaurant ? 'suspended' : 'Suspended'),
+                          badgeLabel,
                           style: TextStyle(
                             color: isActive
                                 ? Colors.white
@@ -746,6 +748,16 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
       ),
     );
+  }
+
+  String _statusBadgeLabel({
+    required bool isRestaurant,
+    required bool isActive,
+  }) {
+    if (isRestaurant) {
+      return isActive ? 'active' : 'suspended';
+    }
+    return isActive ? 'Active' : 'Suspended';
   }
 
   List<Widget> _accountDetails(User user) {
@@ -973,53 +985,15 @@ class _AdminOverviewMetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
-      ),
-      color: Colors.white,
-      elevation: 0,
-      surfaceTintColor: Colors.white,
-      shadowColor: Colors.black.withValues(alpha: 0.04),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 21,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
-                ),
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: accentColor.withValues(alpha: 0.12),
-                  child: Icon(icon, color: accentColor, size: 22),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+    return AppDashboardMetricCard(
+      title: title,
+      value: value,
+      icon: icon,
+      accentColor: accentColor,
+      iconContainerSize: 44,
+      iconSize: 22,
+      valueFontSize: 21,
+      padding: const EdgeInsets.all(18),
     );
   }
 }
@@ -1035,39 +1009,31 @@ class _AdminRevenueChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
-      ),
-      color: Colors.white,
-      elevation: 0,
-      surfaceTintColor: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Weekly Revenue Trend',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
+    return AppOutlinedCard(
+      borderRadius: 22,
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Weekly Revenue Trend',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 320,
-              child: CustomPaint(
-                painter: _RevenueChartPainter(
-                  values: values,
-                  labels: labels,
-                ),
-                child: const SizedBox.expand(),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 320,
+            child: CustomPaint(
+              painter: _RevenueChartPainter(
+                values: values,
+                labels: labels,
               ),
+              child: const SizedBox.expand(),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

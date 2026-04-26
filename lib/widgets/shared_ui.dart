@@ -117,3 +117,153 @@ class AppRemoteImageBox extends StatelessWidget {
     );
   }
 }
+
+class AppOutlinedCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry margin;
+  final double borderRadius;
+  final Color borderColor;
+  final double borderWidth;
+  final double elevation;
+  final Color backgroundColor;
+  final double shadowAlpha;
+
+  const AppOutlinedCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.margin = EdgeInsets.zero,
+    this.borderRadius = 18,
+    this.borderColor = const Color(0xFFE5E7EB),
+    this.borderWidth = 1,
+    this.elevation = 0,
+    this.backgroundColor = Colors.white,
+    this.shadowAlpha = 0.04,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final contents = padding == null
+        ? child
+        : Padding(
+            padding: padding!,
+            child: child,
+          );
+
+    return Card(
+      margin: margin,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+        side: BorderSide(color: borderColor, width: borderWidth),
+      ),
+      color: backgroundColor,
+      elevation: elevation,
+      surfaceTintColor: backgroundColor,
+      shadowColor: Colors.black.withValues(alpha: shadowAlpha),
+      child: contents,
+    );
+  }
+}
+
+class AppDashboardMetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color accentColor;
+  final double iconContainerSize;
+  final double iconSize;
+  final double valueFontSize;
+  final EdgeInsetsGeometry padding;
+
+  const AppDashboardMetricCard({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.accentColor,
+    this.iconContainerSize = 46,
+    this.iconSize = 26,
+    this.valueFontSize = 24,
+    this.padding = const EdgeInsets.all(22),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppOutlinedCard(
+      padding: padding,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.blueGrey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: valueFontSize,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF111827),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: iconContainerSize,
+            height: iconContainerSize,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: accentColor, size: iconSize),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AppPrimaryActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final double minHeight;
+
+  const AppPrimaryActionButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.backgroundColor = const Color(0xFF07031A),
+    this.foregroundColor = Colors.white,
+    this.minHeight = 48,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        foregroundColor: foregroundColor,
+        minimumSize: Size.fromHeight(minHeight),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}

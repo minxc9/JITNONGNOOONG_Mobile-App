@@ -961,46 +961,13 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
   }) {
     return SizedBox(
       width: width,
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: const EdgeInsets.all(22),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.blueGrey[700],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: accentColor, size: 28),
-              ),
-            ],
-          ),
-        ),
+      child: AppDashboardMetricCard(
+        title: title,
+        value: value,
+        icon: icon,
+        accentColor: accentColor,
+        iconContainerSize: 50,
+        iconSize: 28,
       ),
     );
   }
