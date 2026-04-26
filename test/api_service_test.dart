@@ -442,6 +442,46 @@ void main() {
       expect(restaurantStats.activeRestaurants, 16);
     });
 
+    test('fetchAdminRestaurantStats falls back to restaurant list on failure',
+        () async {
+      ApiService.setHttpClient(
+        MockClient((request) async {
+          final path = request.url.path;
+          if (path.endsWith('/restaurants/stats')) {
+            return http.Response(
+              jsonEncode({
+                'success': false,
+                'message': 'Server error',
+                'error': "Unknown column 'APPROVED' in 'where clause'",
+              }),
+              500,
+            );
+          }
+          if (path.endsWith('/restaurants')) {
+            return http.Response(
+              jsonEncode({
+                'success': true,
+                'data': {
+                  'content': [
+                    {'id': 1, 'name': 'Open Kitchen', 'is_active': true},
+                    {'id': 2, 'name': 'Closed Cafe', 'is_active': false},
+                    {'id': 3, 'name': 'Default Active'},
+                  ],
+                },
+              }),
+              200,
+            );
+          }
+          return http.Response('{"success":false}', 404);
+        }),
+      );
+
+      final stats = await ApiService.fetchAdminRestaurantStats();
+
+      expect(stats.totalRestaurants, 3);
+      expect(stats.activeRestaurants, 2);
+    });
+
     test(
         'fetchOrdersForRestaurant, fetchAvailableOrders, and fetchRiderOrders decode content lists',
         () async {

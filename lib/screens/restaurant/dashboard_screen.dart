@@ -450,16 +450,40 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
     );
   }
 
-  int get _pendingOrderCount =>
-      _orders.where((order) => order.status != 'DELIVERED').length;
+  int get _pendingOrderCount => _orders
+      .where(
+        (order) => const {
+          'PENDING',
+          'CONFIRMED',
+          'PREPARING',
+        }.contains(order.status),
+      )
+      .length;
 
   int get _completedOrderCount =>
       _orders.where((order) => order.status == 'DELIVERED').length;
 
-  double get _deliveredRevenue {
-    return _orders
-        .where((order) => order.status == 'DELIVERED')
-        .fold<double>(0, (sum, order) => sum + order.totalAmount);
+  List<Order> get _todayOrders {
+    final now = DateTime.now();
+    return _orders.where((order) {
+      final createdAt = DateTime.tryParse(order.createdAt ?? '');
+      if (createdAt == null) return false;
+      final localCreatedAt = createdAt.toLocal();
+      return localCreatedAt.year == now.year &&
+          localCreatedAt.month == now.month &&
+          localCreatedAt.day == now.day;
+    }).toList();
+  }
+
+  double get _todayRevenue {
+    return _todayOrders.fold<double>(
+      0,
+      (sum, order) => sum + order.totalAmount,
+    );
+  }
+
+  int get _completedTodayCount {
+    return _todayOrders.where((order) => order.status == 'DELIVERED').length;
   }
 
   bool get _canManageMenu =>
@@ -477,26 +501,54 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
         children: [
-          _metricCard(
-            'Pending Orders',
-            '$_pendingOrderCount',
-            Icons.receipt_long_outlined,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final useTwoColumns = constraints.maxWidth >= 720;
+              return Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  _metricCard(
+                    title: 'Pending Orders',
+                    value: '$_pendingOrderCount',
+                    icon: Icons.inventory_2_outlined,
+                    accentColor: const Color(0xFF4F7EFF),
+                    width: useTwoColumns
+                        ? (constraints.maxWidth - 16) / 2
+                        : constraints.maxWidth,
+                  ),
+                  _metricCard(
+                    title: "Today's Revenue",
+                    value: '฿${_todayRevenue.toStringAsFixed(0)}',
+                    icon: Icons.trending_up_rounded,
+                    accentColor: const Color(0xFF4CAF50),
+                    width: useTwoColumns
+                        ? (constraints.maxWidth - 16) / 2
+                        : constraints.maxWidth,
+                  ),
+                  _metricCard(
+                    title: 'Menu Items',
+                    value: '${_menuItems.length}',
+                    icon: Icons.restaurant_menu_outlined,
+                    accentColor: const Color(0xFF8A3FFC),
+                    width: useTwoColumns
+                        ? (constraints.maxWidth - 16) / 2
+                        : constraints.maxWidth,
+                  ),
+                  _metricCard(
+                    title: 'Completed Today',
+                    value: '$_completedTodayCount',
+                    icon: Icons.local_offer_outlined,
+                    accentColor: const Color(0xFFF97316),
+                    width: useTwoColumns
+                        ? (constraints.maxWidth - 16) / 2
+                        : constraints.maxWidth,
+                  ),
+                ],
+              );
+            },
           ),
-          _metricCard(
-            'Delivered Orders',
-            '$_completedOrderCount',
-            Icons.check_circle_outline,
-          ),
-          _metricCard(
-            'Revenue',
-            '฿${_deliveredRevenue.toStringAsFixed(2)}',
-            Icons.payments_outlined,
-          ),
-          _metricCard(
-            'Reviews',
-            '${_reviews.length}',
-            Icons.star_border_outlined,
-          ),
+          const SizedBox(height: 20),
           if (_reviews.isNotEmpty) _buildReviewSummaryCard(),
         ],
       ),
@@ -505,8 +557,9 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
 
   Widget _buildReviewSummaryCard() {
     final reviewCount = _reviews.length;
-    final countLabel =
-        reviewCount == 1 ? '1 customer review' : '$reviewCount customer reviews';
+    final countLabel = reviewCount == 1
+        ? '1 customer review'
+        : '$reviewCount customer reviews';
 
     return Card(
       child: Padding(
@@ -902,8 +955,57 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
     );
   }
 
-  Widget _metricCard(String title, String value, IconData icon) {
-    return AppMetricCard(title: title, value: value, icon: icon);
+  Widget _metricCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color accentColor,
+    required double width,
+  }) {
+    return SizedBox(
+      width: width,
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.blueGrey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: accentColor, size: 28),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _field(

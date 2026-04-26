@@ -350,7 +350,8 @@ void main() {
   testWidgets('RiderDashboardScreen renders available deliveries tab', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({'user_id': 6});
+    SharedPreferences.setMockInitialValues(
+        {'user_id': 6, 'user_name': 'Mike Chen'});
     ApiService.setHttpClient(
       MockClient((request) async {
         if (request.url.path.endsWith('/orders/rider/available') ||
@@ -385,9 +386,12 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: RiderDashboardScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Rider Dashboard'), findsOneWidget);
-    expect(find.text('Available'), findsOneWidget);
-    expect(find.text('Accept'), findsOneWidget);
+    expect(find.text('Rider Portal'), findsOneWidget);
+    expect(find.text('Mike Chen'), findsOneWidget);
+    expect(find.text("Today's Earnings"), findsOneWidget);
+    expect(find.text('Available Orders Nearby'), findsOneWidget);
+    expect(find.text('Bangkok Street Food'), findsWidgets);
+    expect(find.text('Accept Order'), findsOneWidget);
   });
 
   testWidgets('AdminDashboardScreen renders overview metrics', (tester) async {
@@ -417,6 +421,30 @@ void main() {
             200,
           );
         }
+        if (request.url.path.endsWith('/admin/users')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': [
+                {
+                  'id': 1,
+                  'name': 'Customer One',
+                  'email': 'customer@example.com',
+                  'role': 'CUSTOMER',
+                  'enabled': true,
+                },
+                {
+                  'id': 2,
+                  'name': 'Rider One',
+                  'email': 'rider@example.com',
+                  'role': 'RIDER',
+                  'enabled': true,
+                },
+              ],
+            }),
+            200,
+          );
+        }
         return http.Response('{"success":false}', 404);
       }),
     );
@@ -425,13 +453,122 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Admin Dashboard'), findsOneWidget);
+    expect(find.text('Daily Revenue'), findsOneWidget);
+    expect(find.text('฿125,430'), findsOneWidget);
+    expect(find.text('Monthly Revenue'), findsOneWidget);
+    expect(find.text('฿3456.8K'), findsOneWidget);
+    expect(find.text('Active Customers'), findsOneWidget);
+    expect(find.text('15,234'), findsOneWidget);
+    expect(find.text('Active Restaurants'), findsOneWidget);
+    expect(find.text('456'), findsOneWidget);
+    expect(find.text('Active Riders'), findsOneWidget);
+    expect(find.text('234'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+    await tester.pumpAndSettle();
     expect(find.text('Today\'s Orders'), findsOneWidget);
-    expect(find.text('Month Revenue'), findsOneWidget);
+    expect(find.text('892'), findsOneWidget);
+  });
+
+  testWidgets('AdminDashboardScreen uses web fallback when user endpoint fails',
+      (tester) async {
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        if (request.url.path.endsWith('/orders/admin/stats')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {
+                'todayOrders': 9,
+                'monthOrders': 15,
+                'totalOrders': 16,
+                'todayRevenue': 710.0,
+                'monthRevenue': 1330.0,
+              },
+            }),
+            200,
+          );
+        }
+        if (request.url.path.endsWith('/restaurants/stats')) {
+          return http.Response(
+            jsonEncode({
+              'success': true,
+              'data': {'totalRestaurants': 10, 'activeRestaurants': 8},
+            }),
+            200,
+          );
+        }
+        if (request.url.path.endsWith('/admin/users')) {
+          return http.Response('Cannot GET /api/v1/admin/users', 404);
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: AdminDashboardScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('฿125,430'), findsOneWidget);
+    expect(find.text('฿3456.8K'), findsOneWidget);
+    expect(find.text('456'), findsOneWidget);
+    expect(find.text('234'), findsOneWidget);
+    expect(find.text('15,234'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(find.text('892'), findsOneWidget);
+    expect(find.text('Some admin data could not load.'), findsNothing);
+  });
+
+  testWidgets(
+      'AdminDashboardScreen account tab falls back to web demo accounts',
+      (tester) async {
+    ApiService.setHttpClient(
+      MockClient((request) async {
+        if (request.url.path.endsWith('/admin/users')) {
+          return http.Response('Cannot GET /api/v1/admin/users', 404);
+        }
+        return http.Response('{"success":false}', 404);
+      }),
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: AdminDashboardScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Accounts'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('John Doe'), findsOneWidget);
+    expect(find.text('Customer Accounts'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Search accounts'),
+      'Sarah',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sarah Wilson'), findsOneWidget);
+    await tester.tap(find.byType(Switch).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Unable to update account right now.'), findsNothing);
+
+    await tester.tap(find.text('Restaurants'));
+    await tester.pumpAndSettle();
+    expect(find.text('Restaurant Accounts'), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Search accounts'),
+      'Sushi',
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Sushi Master'), findsOneWidget);
   });
 
   testWidgets('RestaurantDashboardScreen renders overview data', (
     tester,
   ) async {
+    final todayIso = DateTime.now().toUtc().toIso8601String();
+    final yesterdayIso = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(days: 1))
+        .toIso8601String();
     SharedPreferences.setMockInitialValues({'user_id': 15});
     ApiService.setHttpClient(
       MockClient((request) async {
@@ -461,9 +598,32 @@ void main() {
                     'orderNumber': 'ORD-1',
                     'customerId': 2,
                     'restaurantId': 1,
+                    'createdAt': todayIso,
+                    'status': 'PENDING',
+                    'totalAmount': 80.0,
+                    'deliveryFee': 20.0,
+                    'orderItems': [],
+                  },
+                  {
+                    'id': 2,
+                    'orderNumber': 'ORD-2',
+                    'customerId': 3,
+                    'restaurantId': 1,
                     'status': 'DELIVERED',
                     'totalAmount': 120.0,
                     'deliveryFee': 20.0,
+                    'createdAt': todayIso,
+                    'orderItems': [],
+                  },
+                  {
+                    'id': 3,
+                    'orderNumber': 'ORD-3',
+                    'customerId': 4,
+                    'restaurantId': 1,
+                    'status': 'DELIVERED',
+                    'totalAmount': 90.0,
+                    'deliveryFee': 20.0,
+                    'createdAt': yesterdayIso,
                     'orderItems': [],
                   },
                 ],
@@ -530,7 +690,10 @@ void main() {
 
     expect(find.text('Bangkok Street Food'), findsOneWidget);
     expect(find.text('Pending Orders'), findsOneWidget);
-    expect(find.text('Reviews'), findsOneWidget);
+    expect(find.text("Today's Revenue"), findsOneWidget);
+    expect(find.text('Menu Items'), findsOneWidget);
+    expect(find.text('Completed Today'), findsOneWidget);
+    expect(find.text('฿200'), findsOneWidget);
   });
 }
 

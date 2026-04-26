@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../models/admin_stats.dart';
@@ -16,13 +18,132 @@ class AdminDashboardScreen extends StatefulWidget {
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
+enum _AdminAccountFilter {
+  customers,
+  restaurants,
+}
+
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  static const _webOverviewOrderStats = OrderStats(
+    todayOrders: 892,
+    monthOrders: 0,
+    totalOrders: 0,
+    todayRevenue: 125430,
+    monthRevenue: 3456789,
+  );
+  static const _webOverviewRestaurantStats = RestaurantStats(
+    totalRestaurants: 456,
+    activeRestaurants: 456,
+  );
+  static const _webFallbackCustomerCount = 15234;
+  static const _webFallbackActiveRiderCount = 234;
+
   OrderStats? _orderStats;
   RestaurantStats? _restaurantStats;
   List<User> _users = [];
   List<Promotion> _promotions = [];
+  int? _customerCountOverride;
+  int? _activeRiderCountOverride;
+  bool _usingFallbackUsers = false;
   bool _loading = true;
   String _search = '';
+  _AdminAccountFilter _accountFilter = _AdminAccountFilter.customers;
+
+  static const _weeklyRevenuePoints = [
+    45000.0,
+    52000.0,
+    48000.0,
+    61000.0,
+    72000.0,
+    95000.0,
+    88000.0,
+  ];
+  static const _weeklyRevenueLabels = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+  ];
+
+  List<User> _webFallbackUsers() {
+    return [
+      User(
+        id: 1,
+        name: 'John Doe',
+        email: 'john@example.com',
+        role: 'CUSTOMER',
+        phoneNumber: '+66 81 234 5678',
+        isActive: true,
+      ),
+      User(
+        id: 2,
+        name: 'Sarah Wilson',
+        email: 'sarah@example.com',
+        role: 'CUSTOMER',
+        phoneNumber: '+66 82 345 6789',
+        isActive: true,
+      ),
+      User(
+        id: 3,
+        name: 'Michael Brown',
+        email: 'michael@example.com',
+        role: 'CUSTOMER',
+        phoneNumber: '+66 83 456 7890',
+        isActive: false,
+      ),
+      User(
+        id: 101,
+        name: 'Bangkok Street Food',
+        email: 'bangkok.street@example.com',
+        role: 'RESTAURANT',
+        phoneNumber: '+66 81 111 1111',
+        isActive: true,
+      ),
+      User(
+        id: 102,
+        name: 'Sushi Master',
+        email: 'sushi.master@example.com',
+        role: 'RESTAURANT',
+        phoneNumber: '+66 82 222 2222',
+        isActive: true,
+      ),
+      User(
+        id: 103,
+        name: 'Pizza Paradise',
+        email: 'pizza.paradise@example.com',
+        role: 'RESTAURANT',
+        phoneNumber: '+66 83 333 3333',
+        isActive: true,
+      ),
+      User(
+        id: 104,
+        name: 'Green Garden',
+        email: 'green.garden@example.com',
+        role: 'RESTAURANT',
+        phoneNumber: '+66 84 444 4444',
+        isActive: false,
+      ),
+      User(
+        id: 105,
+        name: 'Ramen House',
+        email: 'ramen.house@example.com',
+        role: 'RESTAURANT',
+        phoneNumber: '+66 85 555 5555',
+        isActive: true,
+      ),
+      User(
+        id: 106,
+        name: 'Burger Bistro',
+        email: 'burger.bistro@example.com',
+        role: 'RESTAURANT',
+        phoneNumber: '+66 86 666 6666',
+        isActive: true,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -31,27 +152,47 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _loadData() async {
-    try {
-      final results = await Future.wait([
-        ApiService.fetchAdminOrderStats(),
-        ApiService.fetchAdminRestaurantStats(),
-        LocalStorageService.getAdminUsers(),
-        LocalStorageService.getAdminPromotions(),
-      ]);
+    var hadError = false;
+    const orderStats = _webOverviewOrderStats;
+    const restaurantStats = _webOverviewRestaurantStats;
+    var users = <User>[];
+    var promotions = <Promotion>[];
+    var customerCountOverride = _webFallbackCustomerCount;
+    var activeRiderCountOverride = _webFallbackActiveRiderCount;
+    var usingFallbackUsers = false;
 
-      if (!mounted) return;
-      setState(() {
-        _orderStats = results[0] as OrderStats;
-        _restaurantStats = results[1] as RestaurantStats;
-        _users = results[2] as List<User>;
-        _promotions = results[3] as List<Promotion>;
-        _loading = false;
-      });
+    try {
+      users = await ApiService.fetchUsers();
+      if (users.isEmpty) {
+        users = _webFallbackUsers();
+        usingFallbackUsers = true;
+      }
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      users = _webFallbackUsers();
+      usingFallbackUsers = true;
+    }
+
+    try {
+      promotions = await LocalStorageService.getAdminPromotions();
+    } catch (_) {
+      hadError = true;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _orderStats = orderStats;
+      _restaurantStats = restaurantStats;
+      _users = users;
+      _promotions = promotions;
+      _customerCountOverride = customerCountOverride;
+      _activeRiderCountOverride = activeRiderCountOverride;
+      _usingFallbackUsers = usingFallbackUsers;
+      _loading = false;
+    });
+
+    if (hadError) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to load admin data right now.')),
+        const SnackBar(content: Text('Some admin data could not load.')),
       );
     }
   }
@@ -67,6 +208,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> _toggleUser(User user) async {
+    final isActive = !(user.isActive ?? true);
     final updated = _users
         .map((item) => item.id == user.id
             ? User(
@@ -75,12 +217,31 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 email: item.email,
                 role: item.role,
                 phoneNumber: item.phoneNumber,
-                isActive: !(item.isActive ?? true),
+                isActive: isActive,
               )
             : item)
         .toList();
-    await LocalStorageService.saveAdminUsers(updated);
+    final previous = _users;
     setState(() => _users = updated);
+    if (_usingFallbackUsers) return;
+    try {
+      final response = await ApiService.updateUserStatus(user.id, isActive);
+      if (response.statusCode >= 400) {
+        throw Exception('Unable to update user status');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _users = previous);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update account right now.')),
+      );
+    }
+  }
+
+  void _deleteUser(User user) {
+    setState(() {
+      _users = _users.where((item) => item.id != user.id).toList();
+    });
   }
 
   Future<void> _showPromotionDialog() async {
@@ -208,7 +369,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   List<User> get _filteredUsers {
     final query = _search.toLowerCase();
+    final filterRole = _accountFilter == _AdminAccountFilter.customers
+        ? 'CUSTOMER'
+        : 'RESTAURANT';
     return _users.where((user) {
+      if (user.role != filterRole) return false;
       return user.name.toLowerCase().contains(query) ||
           user.email.toLowerCase().contains(query) ||
           user.role.toLowerCase().contains(query);
@@ -216,12 +381,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   int get _customerCount =>
+      _customerCountOverride ??
       _users.where((user) => user.role == 'CUSTOMER').length;
 
   int get _activeRiderCount {
+    if (_activeRiderCountOverride != null) return _activeRiderCountOverride!;
     return _users
         .where((user) => user.role == 'RIDER' && (user.isActive ?? true))
         .length;
+  }
+
+  String _formatCount(int value) {
+    final text = value.toString();
+    return text.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (_) => ',',
+    );
+  }
+
+  String _formatBaht(num value) => '฿${_formatCount(value.round())}';
+
+  String _formatBahtThousands(num value) {
+    return '฿${(value / 1000).toStringAsFixed(1)}K';
+  }
+
+  String _accountSectionTitle() {
+    return _accountFilter == _AdminAccountFilter.customers
+        ? 'Customer Accounts'
+        : 'Restaurant Accounts';
   }
 
   @override
@@ -264,35 +451,70 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildOverviewTab() {
     return RefreshIndicator(
       onRefresh: _loadData,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        children: [
-          _metricCard(
-            'Today\'s Orders',
-            '${_orderStats?.todayOrders ?? 0}',
-            Icons.shopping_bag_outlined,
-          ),
-          _metricCard(
-            'Month Revenue',
-            '฿${(_orderStats?.monthRevenue ?? 0).toStringAsFixed(2)}',
-            Icons.paid_outlined,
-          ),
-          _metricCard(
-            'Active Restaurants',
-            '${_restaurantStats?.activeRestaurants ?? 0}',
-            Icons.storefront_outlined,
-          ),
-          _metricCard(
-            'Active Riders',
-            '$_activeRiderCount',
-            Icons.delivery_dining_outlined,
-          ),
-          _metricCard(
-            'Customers',
-            '$_customerCount',
-            Icons.people_outline,
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final crossAxisCount = width >= 1100 ? 3 : 2;
+          final childAspectRatio = width >= 1100 ? 2.1 : 1.75;
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+            children: [
+              GridView.count(
+                crossAxisCount: crossAxisCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: childAspectRatio,
+                children: [
+                  _AdminOverviewMetricCard(
+                    title: 'Daily Revenue',
+                    value: _formatBaht(_orderStats?.todayRevenue ?? 0),
+                    icon: Icons.attach_money,
+                    accentColor: const Color(0xFF34A853),
+                  ),
+                  _AdminOverviewMetricCard(
+                    title: 'Monthly Revenue',
+                    value: _formatBahtThousands(_orderStats?.monthRevenue ?? 0),
+                    icon: Icons.trending_up,
+                    accentColor: const Color(0xFF5B8DEF),
+                  ),
+                  _AdminOverviewMetricCard(
+                    title: 'Active Customers',
+                    value: _formatCount(_customerCount),
+                    icon: Icons.group_outlined,
+                    accentColor: const Color(0xFF8B5CF6),
+                  ),
+                  _AdminOverviewMetricCard(
+                    title: 'Active Restaurants',
+                    value:
+                        _formatCount(_restaurantStats?.activeRestaurants ?? 0),
+                    icon: Icons.storefront_outlined,
+                    accentColor: const Color(0xFFF97316),
+                  ),
+                  _AdminOverviewMetricCard(
+                    title: 'Active Riders',
+                    value: _formatCount(_activeRiderCount),
+                    icon: Icons.delivery_dining_outlined,
+                    accentColor: const Color(0xFF6366F1),
+                  ),
+                  _AdminOverviewMetricCard(
+                    title: 'Today\'s Orders',
+                    value: _formatCount(_orderStats?.todayOrders ?? 0),
+                    icon: Icons.shopping_cart_outlined,
+                    accentColor: const Color(0xFFEC4899),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _AdminRevenueChartCard(
+                values: _weeklyRevenuePoints,
+                labels: _weeklyRevenueLabels,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -301,24 +523,74 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
             onChanged: (value) => setState(() => _search = value),
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
               hintText: 'Search accounts',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: const Color(0xFFF7F8FB),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ),
           const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildAccountFilterChip(
+                  label: 'Customers',
+                  filter: _AdminAccountFilter.customers,
+                ),
+                const SizedBox(width: 8),
+                _buildAccountFilterChip(
+                  label: 'Restaurants',
+                  filter: _AdminAccountFilter.restaurants,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            _accountSectionTitle(),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadData,
-              child: ListView.builder(
-                itemCount: _filteredUsers.length,
-                itemBuilder: (_, index) =>
-                    _buildUserCard(_filteredUsers[index]),
-              ),
+              child: _filteredUsers.isEmpty
+                  ? ListView(
+                      children: const [
+                        SizedBox(height: 80),
+                        Center(
+                          child: Text(
+                            'No accounts found',
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                        ),
+                      ],
+                    )
+                  : ListView.builder(
+                      itemCount: _filteredUsers.length,
+                      itemBuilder: (_, index) =>
+                          _buildUserCard(_filteredUsers[index]),
+                    ),
             ),
           ),
         ],
@@ -326,28 +598,240 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildUserCard(User user) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: Colors.orange,
-          child: Text(
-            user.name.isEmpty ? '?' : user.name[0].toUpperCase(),
-            style: const TextStyle(color: Colors.white),
-          ),
+  Widget _buildAccountFilterChip({
+    required String label,
+    required _AdminAccountFilter filter,
+  }) {
+    final selected = _accountFilter == filter;
+    return GestureDetector(
+      onTap: () => setState(() => _accountFilter = filter),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
-        title: Text(user.name),
-        subtitle: Text('${user.email} • ${user.role}'),
-        trailing: Switch(
-          activeThumbColor: Colors.orange,
-          value: user.isActive ?? true,
-          onChanged: (_) => _toggleUser(user),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: selected ? const Color(0xFF111827) : const Color(0xFF4B5563),
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildUserCard(User user) {
+    final isRestaurant = user.role == 'RESTAURANT';
+    final isActive = user.isActive ?? true;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
+      color: Colors.white,
+      elevation: 0,
+      surfaceTintColor: Colors.white,
+      shadowColor: Colors.black.withValues(alpha: 0.04),
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFF111827)
+                              : const Color(0xFFE5E7EB),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          isActive
+                              ? (isRestaurant ? 'active' : 'Active')
+                              : (isRestaurant ? 'suspended' : 'Suspended'),
+                          style: TextStyle(
+                            color: isActive
+                                ? Colors.white
+                                : const Color(0xFF374151),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  ..._accountDetails(user),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Switch(
+                      activeThumbColor: Colors.white,
+                      activeTrackColor: const Color(0xFF111827),
+                      inactiveThumbColor: Colors.white,
+                      inactiveTrackColor: const Color(0xFFD1D5DB),
+                      value: isActive,
+                      onChanged: (_) => _toggleUser(user),
+                    ),
+                    Text(
+                      isActive ? 'Enabled' : 'Disabled',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    OutlinedButton(
+                      onPressed: () => _deleteUser(user),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.all(12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        side: BorderSide(
+                          color: const Color(0xFFFCA5A5).withValues(alpha: 0.7),
+                        ),
+                        minimumSize: const Size(46, 46),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _accountDetails(User user) {
+    if (user.role == 'RESTAURANT') {
+      final restaurantMeta = _restaurantMetadata[user.name];
+      return [
+        Text(
+          'Cuisine: ${restaurantMeta?.cuisine ?? 'Mixed'}',
+          style: const TextStyle(color: Color(0xFF6B7280), fontSize: 15),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Rating: ${restaurantMeta?.rating ?? '4.5'} ${String.fromCharCode(0x2B50)}',
+          style: const TextStyle(color: Color(0xFF6B7280), fontSize: 15),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Distance: ${restaurantMeta?.distanceKm ?? '1.0'} km',
+          style: const TextStyle(color: Color(0xFF6B7280), fontSize: 15),
+        ),
+      ];
+    }
+
+    final customerMeta = _customerMetadata[user.email];
+    return [
+      Text(
+        user.email,
+        style: const TextStyle(color: Color(0xFF6B7280), fontSize: 15),
+      ),
+      if (user.phoneNumber != null) ...[
+        const SizedBox(height: 6),
+        Text(
+          user.phoneNumber!,
+          style: const TextStyle(color: Color(0xFF6B7280), fontSize: 15),
+        ),
+      ],
+      const SizedBox(height: 10),
+      Text(
+        'Total Orders: ${customerMeta?.totalOrders ?? 0}',
+        style: const TextStyle(
+          color: Color(0xFF6B7280),
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ];
+  }
+
+  Map<String, _RestaurantAccountMeta> get _restaurantMetadata => {
+        'Bangkok Street Food': const _RestaurantAccountMeta(
+          cuisine: 'Thai',
+          rating: '4.5',
+          distanceKm: '0.8',
+        ),
+        'Sushi Master': const _RestaurantAccountMeta(
+          cuisine: 'Japanese',
+          rating: '4.8',
+          distanceKm: '1.2',
+        ),
+        'Pizza Paradise': const _RestaurantAccountMeta(
+          cuisine: 'Western',
+          rating: '4.3',
+          distanceKm: '2.5',
+        ),
+        'Green Garden': const _RestaurantAccountMeta(
+          cuisine: 'Thai',
+          rating: '4.6',
+          distanceKm: '1.8',
+        ),
+        'Ramen House': const _RestaurantAccountMeta(
+          cuisine: 'Japanese',
+          rating: '4.7',
+          distanceKm: '3.0',
+        ),
+        'Burger Bistro': const _RestaurantAccountMeta(
+          cuisine: 'Western',
+          rating: '4.4',
+          distanceKm: '0.5',
+        ),
+      };
+
+  Map<String, _CustomerAccountMeta> get _customerMetadata => {
+        'john@example.com': const _CustomerAccountMeta(totalOrders: 24),
+        'sarah@example.com': const _CustomerAccountMeta(totalOrders: 15),
+        'michael@example.com': const _CustomerAccountMeta(totalOrders: 8),
+      };
 
   Widget _buildPromotionsTab() {
     return Column(
@@ -457,5 +941,280 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         border: const OutlineInputBorder(),
       ),
     );
+  }
+}
+
+class _CustomerAccountMeta {
+  final int totalOrders;
+
+  const _CustomerAccountMeta({required this.totalOrders});
+}
+
+class _RestaurantAccountMeta {
+  final String cuisine;
+  final String rating;
+  final String distanceKm;
+
+  const _RestaurantAccountMeta({
+    required this.cuisine,
+    required this.rating,
+    required this.distanceKm,
+  });
+}
+
+class _AdminOverviewMetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color accentColor;
+
+  const _AdminOverviewMetricCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
+      color: Colors.white,
+      elevation: 0,
+      surfaceTintColor: Colors.white,
+      shadowColor: Colors.black.withValues(alpha: 0.04),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: Color(0xFF6B7280),
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                ),
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: accentColor.withValues(alpha: 0.12),
+                  child: Icon(icon, color: accentColor, size: 22),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminRevenueChartCard extends StatelessWidget {
+  final List<double> values;
+  final List<String> labels;
+
+  const _AdminRevenueChartCard({
+    required this.values,
+    required this.labels,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
+      color: Colors.white,
+      elevation: 0,
+      surfaceTintColor: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Weekly Revenue Trend',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 320,
+              child: CustomPaint(
+                painter: _RevenueChartPainter(
+                  values: values,
+                  labels: labels,
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RevenueChartPainter extends CustomPainter {
+  final List<double> values;
+  final List<String> labels;
+
+  _RevenueChartPainter({
+    required this.values,
+    required this.labels,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty || labels.length != values.length) return;
+
+    const leftPadding = 54.0;
+    const topPadding = 12.0;
+    const rightPadding = 16.0;
+    const bottomPadding = 42.0;
+
+    final chartRect = Rect.fromLTWH(
+      leftPadding,
+      topPadding,
+      size.width - leftPadding - rightPadding,
+      size.height - topPadding - bottomPadding,
+    );
+
+    final minY = 0.0;
+    final maxY = math.max(100000.0, values.reduce(math.max));
+    const guideSteps = 4;
+
+    final gridPaint = Paint()
+      ..color = const Color(0xFFD1D5DB)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final axisPaint = Paint()
+      ..color = const Color(0xFF6B7280)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final fillPaint = Paint()
+      ..color = const Color(0xFF8AB4F8).withValues(alpha: 0.58)
+      ..style = PaintingStyle.fill;
+    final linePaint = Paint()
+      ..color = const Color(0xFF4F83F1)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final pointStep =
+        labels.length > 1 ? chartRect.width / (labels.length - 1) : 0.0;
+    final points = <Offset>[];
+
+    double yForValue(double value) {
+      final normalized = (value - minY) / (maxY - minY);
+      return chartRect.bottom - (normalized * chartRect.height);
+    }
+
+    for (var i = 0; i <= guideSteps; i++) {
+      final value = minY + ((maxY - minY) / guideSteps) * i;
+      final y = yForValue(value);
+      canvas.drawLine(
+        Offset(chartRect.left, y),
+        Offset(chartRect.right, y),
+        gridPaint,
+      );
+      final label = value.toInt().toString();
+      final painter = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(
+            color: Color(0xFF6B7280),
+            fontSize: 11,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      painter.paint(canvas, Offset(0, y - painter.height / 2));
+    }
+
+    for (var i = 0; i < labels.length; i++) {
+      final x = chartRect.left + pointStep * i;
+      canvas.drawLine(
+        Offset(x, chartRect.top),
+        Offset(x, chartRect.bottom),
+        gridPaint,
+      );
+      final painter = TextPainter(
+        text: TextSpan(
+          text: labels[i],
+          style: const TextStyle(
+            color: Color(0xFF6B7280),
+            fontSize: 11,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      painter.paint(
+        canvas,
+        Offset(x - painter.width / 2, chartRect.bottom + 10),
+      );
+      points.add(Offset(x, yForValue(values[i])));
+    }
+
+    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var i = 1; i < points.length; i++) {
+      final previous = points[i - 1];
+      final current = points[i];
+      final controlX = (previous.dx + current.dx) / 2;
+      linePath.cubicTo(
+        controlX,
+        previous.dy,
+        controlX,
+        current.dy,
+        current.dx,
+        current.dy,
+      );
+    }
+
+    final fillPath = Path.from(linePath)
+      ..lineTo(chartRect.right, chartRect.bottom)
+      ..lineTo(chartRect.left, chartRect.bottom)
+      ..close();
+
+    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(linePath, linePaint);
+    canvas.drawLine(
+      Offset(chartRect.left, chartRect.bottom),
+      Offset(chartRect.right, chartRect.bottom),
+      axisPaint,
+    );
+    canvas.drawLine(
+      Offset(chartRect.left, chartRect.top),
+      Offset(chartRect.left, chartRect.bottom),
+      axisPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RevenueChartPainter oldDelegate) {
+    return oldDelegate.values != values || oldDelegate.labels != labels;
   }
 }

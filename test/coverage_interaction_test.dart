@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mhar_rueng_sang/models/restaurant.dart';
-import 'package:mhar_rueng_sang/models/user.dart';
 import 'package:mhar_rueng_sang/screens/admin/dashboard_screen.dart';
 import 'package:mhar_rueng_sang/screens/auth/login_screen.dart';
 import 'package:mhar_rueng_sang/screens/auth/otp_screen.dart';
@@ -245,6 +244,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pending Orders'), findsOneWidget);
+      expect(find.text("Today's Revenue"), findsOneWidget);
+      expect(find.text('Menu Items'), findsOneWidget);
+      expect(find.text('Completed Today'), findsOneWidget);
+      await tester.drag(find.byType(ListView).first, const Offset(0, -180));
+      await tester.pumpAndSettle();
       expect(find.text('Customer Rating'), findsOneWidget);
       expect(find.text('5.0'), findsNWidgets(2));
       expect(find.text('1 customer review'), findsOneWidget);
@@ -349,25 +353,43 @@ void main() {
               200,
             );
           }
+          if (request.url.path.endsWith('/admin/users') &&
+              request.method == 'GET') {
+            return http.Response(
+              jsonEncode({
+                'success': true,
+                'data': [
+                  {
+                    'id': 1,
+                    'name': 'Alice Admin',
+                    'email': 'alice@example.com',
+                    'role': 'CUSTOMER',
+                    'phone_number': '+66 1',
+                    'enabled': true,
+                  },
+                ],
+              }),
+              200,
+            );
+          }
+          if (request.url.path.endsWith('/admin/users/1/status') &&
+              request.method == 'PUT') {
+            return http.Response(
+              jsonEncode({'success': true, 'data': {}}),
+              200,
+            );
+          }
           return http.Response('{"success":false}', 404);
         }),
       );
 
-      await LocalStorageService.saveAdminUsers([
-        User(
-          id: 1,
-          name: 'Alice Admin',
-          email: 'alice@example.com',
-          role: 'CUSTOMER',
-          phoneNumber: '+66 1',
-          isActive: true,
-        ),
-      ]);
       await LocalStorageService.saveAdminPromotions([]);
 
       await tester.pumpWidget(const MaterialApp(home: AdminDashboardScreen()));
       await tester.pumpAndSettle();
 
+      await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
       expect(find.text('Today\'s Orders'), findsOneWidget);
 
       await tester.tap(find.text('Accounts'));
@@ -486,6 +508,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Admin Dashboard'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+    await tester.pumpAndSettle();
     expect(find.text('Today\'s Orders'), findsOneWidget);
   });
 
@@ -1110,6 +1134,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'user_id': 6,
       'user_role': 'RIDER',
+      'user_name': 'Mike Chen',
     });
 
     ApiService.setHttpClient(
@@ -1191,18 +1216,21 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: RiderDashboardScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Accept'), findsOneWidget);
-    await tester.tap(find.text('My Deliveries'));
+    expect(find.text('Rider Portal'), findsOneWidget);
+    expect(find.text('Mike Chen'), findsOneWidget);
+    expect(find.text('Active Delivery'), findsNWidgets(2));
+    expect(find.text('View Delivery Details'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -260));
     await tester.pumpAndSettle();
-    expect(find.text('View Delivery'), findsOneWidget);
+    expect(find.text('Available Orders Nearby'), findsOneWidget);
 
-    await tester.tap(find.text('View Delivery'));
+    await tester.tap(find.text('View Delivery Details'));
     await tester.pumpAndSettle();
     expect(find.text('Delivery Details'), findsOneWidget);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.logout));
+    await tester.tap(find.text('Exit'));
     await tester.pumpAndSettle();
     expect(find.text('Sign in to your account'), findsOneWidget);
   });
@@ -1212,6 +1240,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'user_id': 6,
       'user_role': 'RIDER',
+      'user_name': 'Mike Chen',
     });
 
     var availableFail = false;
@@ -1286,18 +1315,18 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: RiderDashboardScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('Accept'), findsOneWidget);
-    await tester.tap(find.text('Accept'));
+    expect(find.text('Accept Order'), findsOneWidget);
+    await tester.tap(find.text('Accept Order'));
     await tester.pumpAndSettle();
     expect(find.text('Order accepted.'), findsOneWidget);
+    expect(find.text('Delivery Details'), findsOneWidget);
 
-    await tester.tap(find.text('My Deliveries'));
+    await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('View Delivery'), findsOneWidget);
 
-    await tester.tap(find.text('Available'));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -260));
     await tester.pumpAndSettle();
-    expect(find.text('No orders waiting for pickup'), findsOneWidget);
+    expect(find.text('No available orders at the moment'), findsOneWidget);
 
     availableFail = true;
     await tester.pumpWidget(
@@ -1308,7 +1337,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('No orders waiting for pickup'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -260));
+    await tester.pumpAndSettle();
+    expect(find.text('No available orders at the moment'), findsOneWidget);
   });
 
   testWidgets('DeliveryScreen covers contact dialog and delivery confirmation',
@@ -1438,8 +1469,8 @@ void main() {
 
     await tester.tap(find.text('Open Restaurant Map'));
     await tester.pumpAndSettle();
-    expect(find.text('No map location available for restaurant.'),
-        findsOneWidget);
+    expect(
+        find.text('No map location available for restaurant.'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
@@ -1543,8 +1574,7 @@ void main() {
     expect(orderCalled, isTrue);
   });
 
-  testWidgets('CartScreen covers paid delivery summary branch',
-      (tester) async {
+  testWidgets('CartScreen covers paid delivery summary branch', (tester) async {
     SharedPreferences.setMockInitialValues({'user_id': 5});
 
     final restaurant =

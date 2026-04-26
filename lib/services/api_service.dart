@@ -328,7 +328,9 @@ class ApiService {
 
   static Future<List<User>> fetchUsers() async {
     final data = await _decode(await getAllUsers());
-    final rows = data as List<dynamic>? ?? [];
+    final rows = data is Map<String, dynamic>
+        ? data['content'] as List<dynamic>? ?? []
+        : data as List<dynamic>? ?? [];
     return rows.map((row) => User.fromJson(row)).toList();
   }
 
@@ -338,7 +340,16 @@ class ApiService {
   }
 
   static Future<RestaurantStats> fetchAdminRestaurantStats() async {
-    final data = await _decode(await getAdminRestaurantStats());
-    return RestaurantStats.fromJson(data);
+    try {
+      final data = await _decode(await getAdminRestaurantStats());
+      return RestaurantStats.fromJson(data);
+    } catch (_) {
+      final restaurants = await fetchRestaurants();
+      return RestaurantStats(
+        totalRestaurants: restaurants.length,
+        activeRestaurants:
+            restaurants.where((restaurant) => restaurant.isActive).length,
+      );
+    }
   }
 }
