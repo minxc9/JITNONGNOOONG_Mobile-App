@@ -508,7 +508,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              _AdminRevenueChartCard(
+              const _AdminRevenueChartCard(
                 values: _weeklyRevenuePoints,
                 labels: _weeklyRevenueLabels,
               ),
@@ -924,10 +924,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _metricCard(String title, String value, IconData icon) {
-    return AppMetricCard(title: title, value: value, icon: icon);
-  }
-
   Widget _textField(
     TextEditingController controller,
     String label, {
@@ -1102,7 +1098,7 @@ class _RevenueChartPainter extends CustomPainter {
       size.height - topPadding - bottomPadding,
     );
 
-    final minY = 0.0;
+    const minY = 0.0;
     final maxY = math.max(100000.0, values.reduce(math.max));
     const guideSteps = 4;
 

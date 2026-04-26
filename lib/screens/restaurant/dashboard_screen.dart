@@ -460,9 +460,6 @@ class _RestaurantDashboardScreenState extends State<RestaurantDashboardScreen> {
       )
       .length;
 
-  int get _completedOrderCount =>
-      _orders.where((order) => order.status == 'DELIVERED').length;
-
   List<Order> get _todayOrders {
     final now = DateTime.now();
     return _orders.where((order) {
